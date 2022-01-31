@@ -1,26 +1,65 @@
 #include <assert.h>
+#include "coap_.h"
+#include "config_.h"
 #include <openthread-core-config.h>
 #include <openthread/config.h>
 
 #include <openthread/cli.h>
 #include <openthread/diag.h>
 #include <openthread/tasklet.h>
+#include <openthread/thread.h>
+#include <openthread/dataset_ftd.h>
+
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 
 #include "openthread-system.h"
 #include "app.h"
+#include "dns.h"
+#include "pt/pt.h"
+#include "i2c.h"
 
 #include "sl_component_catalog.h"
+
 
 #ifndef OPENTHREAD_ENABLE_COVERAGE
 #define OPENTHREAD_ENABLE_COVERAGE 0
 #endif
 
-/**
- * This function initializes the CLI app.
- *
- * @param[in]  aInstance  The OpenThread instance structure.
- *
- */
+typedef enum AppState
+{
+    MDNS_READY,
+    MDNS_SEARCHING,
+    MDNS_WAIT_ANSWER,
+    COAP_INIT,
+    DATA_READ,
+    COAP_POST,
+    COAP_WAIT_ACK,
+    DELAY1S,
+    DELAY5S,
+    ERROR
+} AppState;
+
+struct AppData {
+    struct pt pt;
+    otInstance *instance;
+    CoapClient *coap;
+    MDnsClient *mdns;
+    AppState state;
+    AppState next_state;
+    bool done;
+    bool connected;
+    uint64_t then;
+    otIp6Address address;
+    otError error;
+    uint16_t dummy;
+    char message[APP_MESSAGE_MAX_LEN];
+    bool txInProgress;
+};
+
+static AppData _app;
+
 extern void otAppCliInit(otInstance *aInstance);
 
 #if OPENTHREAD_CONFIG_HEAP_EXTERNAL_ENABLE
@@ -42,10 +81,6 @@ otInstance *otGetInstance(void)
     return sInstance;
 }
 
-
-/*
- * Provide, if required an "otPlatLog()" function
- */
 #if OPENTHREAD_CONFIG_LOG_OUTPUT == OPENTHREAD_CONFIG_LOG_OUTPUT_APP
 void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat, ...)
 {
@@ -71,13 +106,60 @@ void sl_ot_cli_init(void)
     otAppCliInit(sInstance);
 }
 
+void setNetworkConfiguration(void)
+{
+    static char          aNetworkName[] = APP_NETWORK_NAME;
+    otError              error;
+    otOperationalDataset aDataset;
+
+    memset(&aDataset, 0, sizeof(otOperationalDataset));
+
+    aDataset.mActiveTimestamp                      = 1;
+    aDataset.mComponents.mIsActiveTimestampPresent = true;
+
+    /* Set Channel */
+    aDataset.mChannel                      = APP_NETWORK_CHANNEL;
+    aDataset.mComponents.mIsChannelPresent = true;
+
+    /* Set Pan ID */
+    aDataset.mPanId                      = (otPanId)APP_NETWORK_PANID;
+    aDataset.mComponents.mIsPanIdPresent = true;
+
+    /* Set Extended Pan ID */
+    uint8_t extPanId[OT_EXT_PAN_ID_SIZE] = APP_NETWORK_EPANID;
+    memcpy(aDataset.mExtendedPanId.m8, extPanId, sizeof(aDataset.mExtendedPanId));
+    aDataset.mComponents.mIsExtendedPanIdPresent = true;
+
+    /* Set network key */
+    uint8_t key[OT_NETWORK_KEY_SIZE] = APP_NETWORK_KEY;
+    memcpy(aDataset.mNetworkKey.m8, key, sizeof(aDataset.mNetworkKey));
+    aDataset.mComponents.mIsNetworkKeyPresent = true;
+
+    /* Set Network Name */
+    size_t length = strlen(aNetworkName);
+    assert(length <= OT_NETWORK_NAME_MAX_SIZE);
+    memcpy(aDataset.mNetworkName.m8, aNetworkName, length);
+    aDataset.mComponents.mIsNetworkNamePresent = true;
+
+    /* Set the Active Operational Dataset to this dataset */
+    error = otDatasetSetActive(otGetInstance(), &aDataset);
+    if (error != OT_ERROR_NONE)
+    {
+        otCliOutputFormat("Error applying thread dataset (Nwk conf): %d, %s\r\n", error, otThreadErrorToString(error));
+        return;
+    }
+}
+
 /**************************************************************************//**
  * Application Init.
  *****************************************************************************/
 
 void app_init(void)
 {
+    // Load Thread network conf.
+    setNetworkConfiguration();
 
+    PT_INIT(&_app.pt);
 }
 
 /**************************************************************************//**

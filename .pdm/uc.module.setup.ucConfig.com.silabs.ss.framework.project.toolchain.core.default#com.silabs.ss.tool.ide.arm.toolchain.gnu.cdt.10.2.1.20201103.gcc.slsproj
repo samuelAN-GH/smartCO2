@@ -10,6 +10,7 @@
     <file name="sl_memory_config.h" generated="true" linked="false" uri="studio:/project/config/sl_memory_config.h"/>
     <file name="dmadrv_config.h" generated="true" linked="false" uri="studio:/project/config/dmadrv_config.h"/>
     <file name="sl_rail_util_pti_config.h" generated="true" linked="false" uri="studio:/project/config/sl_rail_util_pti_config.h"/>
+    <file name="ustimer_config.h" generated="true" linked="false" uri="studio:/project/config/ustimer_config.h"/>
     <file name="nvm3_default_config.h" generated="true" linked="false" uri="studio:/project/config/nvm3_default_config.h"/>
     <file name="sl_device_init_emu_config.h" generated="true" linked="false" uri="studio:/project/config/sl_device_init_emu_config.h"/>
     <file name="sl_device_init_hfxo_config.h" generated="true" linked="false" uri="studio:/project/config/sl_device_init_hfxo_config.h"/>

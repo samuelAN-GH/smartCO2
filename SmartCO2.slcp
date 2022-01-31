@@ -19,6 +19,7 @@ toolchain_settings: []
 component:
 - {id: MGM210PA22JIA}
 - {id: rail_util_pti}
+- {id: ustimer}
 - {id: ot_cli_source}
 - instance: [vcom]
   id: uartdrv_usart
