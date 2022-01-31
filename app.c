@@ -168,16 +168,41 @@ void setNetworkConfiguration(void)
 }
 
 /**************************************************************************//**
- * Application Init.
+ * Application Init, returns AppData
  *****************************************************************************/
 
-void app_init(void)
+AppData *app_init(otInstance *instance)
 {
-    // Load Thread network conf and reset thread
-    setNetworkConfiguration();
 
-    //PT_INIT(&_app.pt);
+    setNetworkConfiguration(); // Load Thread network conf and reset thread
+    otError error;
+    AppData *app = &_app;
+
+    app->instance = instance;
+    app->coap = NULL;
+    app->mdns = NULL;
+    app->done = true;
+    app->then = otPlatAlarmMilliGetNow();
+    app->connected = false;
+
+    // PT_INIT(&app->pt);
+
+    // TODO: remove
+    app->dummy = 400;
+
+//    error = otSetStateChangedCallback(instance, handleNetifStateChanged, app);
+//    if (error != OT_ERROR_NONE) {
+//        ERROR_F("otSetStateChangedCallback");
+//        return NULL;
+//    }
+
+    return app;
+
+    GPIO_PinOutSet(gpioPortD, 4);
+    USTIMER_Delay(200000);
+    GPIO_PinOutClear(gpioPortD, 4);
 }
+
 
 /**************************************************************************//**
  * Application Process Action.

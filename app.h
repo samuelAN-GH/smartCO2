@@ -2,13 +2,14 @@
 #define APP_H
 
 #include "pt/pt.h"
+#include <openthread/thread.h>
 
 typedef struct AppData AppData;
 
 /**************************************************************************//**
  * Application Init.
  *****************************************************************************/
-void app_init(void);
+AppData *app_init(otInstance *instance);
 
 /**************************************************************************//**
  * Application Exit.
