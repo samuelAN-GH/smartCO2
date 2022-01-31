@@ -3,6 +3,7 @@
 #include "config_.h"
 #include <openthread-core-config.h>
 #include <openthread/config.h>
+#include "ustimer.h"
 
 #include <openthread/cli.h>
 #include <openthread/diag.h>
@@ -13,6 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include "em_gpio.h"
 
 #include "openthread-system.h"
 #include "app.h"
@@ -143,11 +145,26 @@ void setNetworkConfiguration(void)
 
     /* Set the Active Operational Dataset to this dataset */
     error = otDatasetSetActive(otGetInstance(), &aDataset);
+
     if (error != OT_ERROR_NONE)
     {
         otCliOutputFormat("Error applying thread dataset (Nwk conf): %d, %s\r\n", error, otThreadErrorToString(error));
         return;
     }
+
+    otLinkModeConfig config;
+
+    config.mRxOnWhenIdle = true;
+    config.mDeviceType   = 0; //MTD
+    config.mNetworkData  = 0;
+    error = otThreadSetLinkMode(otGetInstance(), config);
+
+    assert(otIp6SetEnabled(sInstance, true) == OT_ERROR_NONE);
+    assert(otThreadSetEnabled(sInstance, true) == OT_ERROR_NONE);
+
+    GPIO_PinOutSet(gpioPortD, 4);
+    USTIMER_Delay(200000);
+    GPIO_PinOutClear(gpioPortD, 4);
 }
 
 /**************************************************************************//**
@@ -156,10 +173,10 @@ void setNetworkConfiguration(void)
 
 void app_init(void)
 {
-    // Load Thread network conf.
+    // Load Thread network conf and reset thread
     setNetworkConfiguration();
 
-    PT_INIT(&_app.pt);
+    //PT_INIT(&_app.pt);
 }
 
 /**************************************************************************//**

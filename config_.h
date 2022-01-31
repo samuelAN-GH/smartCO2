@@ -1,5 +1,4 @@
 #ifndef THINGSBOARD_CONFIG_H
-
 #define THINGSBOARD_CONFIG_H
 
 #include <stdint.h>

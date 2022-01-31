@@ -1,8 +1,9 @@
 #include "sl_component_catalog.h"
 #include "sl_system_init.h"
 #include "app.h"
-//#include "ustimer.h"
+#include "ustimer.h"
 #include "sl_system_process_action.h"
+#include <openthread/cli.h>
 #include "em_gpio.h"
 
 void initGPIO(void)
@@ -24,7 +25,7 @@ int main(void)
   otCliOutputFormat("System initialized, Thread enabled");
 
   initGPIO();
-  //USTIMER_init(); // TODO: remove?
+  USTIMER_Init(); // TODO: remove?
   app_init();
 
   while (1) {
