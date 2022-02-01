@@ -9,6 +9,7 @@
 #include "em_i2c.h"
 #include "em_cmu.h"
 #include "em_emu.h"
+#include "pt/pt.h"
 
 /**
  * @brief   Initialization of the I2C physical layer and SDA/SCL ports assignation

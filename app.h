@@ -21,4 +21,6 @@ void app_exit(void);
  *****************************************************************************/
 void app_process_action(void);
 
+PT_THREAD(nodeConnectThread(struct pt *pt));
+
 #endif

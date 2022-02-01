@@ -33,12 +33,11 @@ int main(void)
 
   while (1) {
 
-    sl_system_process_action();
+    sl_system_process_action(); //TODO : remove?
 
     // Application process.
     app_process_action();
 
-    // TODO : go to sleep
 
   }
   // Clean-up when exiting the application.

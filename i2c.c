@@ -9,6 +9,7 @@
 #include "em_emu.h"
 #include "app.h"
 #include "log.h"
+#include "pt/pt.h"
 
 #define I2C_TXBUFFER_SIZE   3       // Max transmit buffer size for write cmds (bytes)
 #define I2C_RXBUFFER_SIZE   18      // Max transmit buffer size for write cmds (bytes)
@@ -69,7 +70,7 @@ void I2C_RequestAndReadback(uint8_t slaveAddress, uint8_t *requestCmd, uint8_t n
     ERROR("I2C transaction abort (success = false)");
   }
 }
-  
+
 void I2C_Read(uint8_t slaveAddress, uint8_t *rxBuff, uint8_t numBytes)
 {
 
