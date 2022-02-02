@@ -33,13 +33,15 @@
 #define NOW()                 otPlatAlarmMilliGetNow()
 #define PT_SLEEP(x)           PT_WAIT_UNTIL(pt, (NOW() - _app.then) >= (x))
 
-#define PROTOTHREADS_NUMBER 1           // Number of protothreads in app_process_action
+#define PROTOTHREADS_NUMBER 1             // Number of protothreads in app_process_action
+#define PTHREAD1 nodeConnectThread
+#define PTHREAD2 SCD30UpdateValueThread
+#define PTHREAD3 SCD41UpdateValueThread
+#define PTHREAD4 VbatUpdateValueThread
 
 struct AppData {
-    struct pt ptSCD30;                  // SCD30UpdateValueThread pointer
-    struct pt ptConnect;                // nodeConnectThread pointer
-    struct pt ptSCD41;                  // SCD41UpdateValueThread pointer
-    struct pt ptVbat;                   // VbatUpdateValueThread pointer
+    struct pt pThread1, pThread2, pThread3, pThread4;            // Threads pointers
+    bool pThreadDone1, pThreadDone2, pThreadDone3, pThreadDone4; // Threads single execution done flags
     otInstance *sInstance;              // OT instance
     CoapClient *coap;                   // Coap client instance
     MDnsClient *mdns;                   // MDNS client instance
@@ -230,10 +232,10 @@ AppData *app_init(otInstance *instance)
     app->then = otPlatAlarmMilliGetNow();
     app->connected = false;
 
-    PT_INIT(&(_app).ptConnect);
-    PT_INIT(&(_app).ptSCD30);
-    PT_INIT(&(_app).ptSCD41);
-    PT_INIT(&(_app).ptVbat);
+    PT_INIT(&(_app).pThread1);
+    PT_INIT(&(_app).pThread2);
+    PT_INIT(&(_app).pThread3);
+    PT_INIT(&(_app).pThread4);
 
     app->co2 = 0.0;
     app->rh = 0.0;
@@ -264,43 +266,51 @@ Application Process / Called by main superloop
 
 void app_process_action(void)
 {
-
     // TaskletsProcess & SysProcess equivalent to old "thread_step"
     // Thread nwk synchronization (OT SYNC)
     otTaskletsProcess(sInstance);
     otSysProcessDrivers(sInstance);
 
-    uint8_t th1 = nodeConnectThread(&(_app).ptConnect);         // Node thread connection Thread
-    uint8_t th2 = 3; // SCD30UpdateValueThread(&(_app).ptSCD30);    // SCD30 measurement Thread (if connected)
-    uint8_t th3 = 3; // SCD41UpdateValueThread(&(_app).ptSCD41);    // SCD41 measurement Thread
-    uint8_t th4 = 3; //VbatUpdateValueThread(&(_app).ptVbat);      // Battery voltage measurement Thread
+    // Execute only one time each thread
+    if (!_app.pThreadDone1) {
+       PTHREAD1(&(_app).pThread1);                    // Node thread connection Thread
+    }
+    if (!_app.pThreadDone2) {
+        // SCD30UpdateValueThread(&(_app).pThread2);  // SCD30 measurement Thread (if connected)
+    }
+    if (!_app.pThreadDone3) {
+      // SCD41UpdateValueThread(&(_app).pThread3);    // SCD41 measurement Thread
+    }
+    if (!_app.pThreadDone4) {
+      //VbatUpdateValueThread(&(_app).pThread4);      // Battery voltage measurement Thread
+    }
 
-    // Check that all threads are finished (return 3)
-    if(th1 == 3 && th2 == 3 && th3 == 3 && th4 == 3) {
+    // Check that all threads are done (PT_END triggered)
+    if(_app.pThreadDone1 && _app.pThreadDone2 && _app.pThreadDone3 && _app.pThreadDone4) {
 
-      INFO("All app Threads finished, sending coap message...");
-      _app.appThreadsSuccess = 0;
+        INFO("All app_process Threads finished");
+        _app.pThreadDone1 = false;
+        _app.pThreadDone2 = false;
+        _app.pThreadDone3 = false;
+        _app.pThreadDone4 = false;
 
-      //build message()
-      //send message()
+        INFO("Build and send CoAP message...");
+        //build message()
+        //send message()
 
-      INFO("CoAP message sent, going in sleep mode...");
+        INFO("CoAP message sent, going in sleep mode...");
 
-      //Sleep (x min)
+        //Sleep (x min)
 
-      GPIO_PinOutSet(gpioPortD, 4);
-      USTIMER_Delay(200000);
-      GPIO_PinOutClear(gpioPortD, 4);
+        GPIO_PinOutSet(gpioPortD, 4);
+        USTIMER_Delay(200000);
+        GPIO_PinOutClear(gpioPortD, 4);
 
     }
 }
 
 PT_THREAD(nodeConnectThread(struct pt *pt))
 {
-    if(_app.appThreadsSuccess == PROTOTHREADS_NUMBER) {
-        PT_EXIT(pt); // All threads are flaged as finished
-    }
-
     INFO("[Thread 1] Node Connection...");
 
     AppData *app = &_app; //pointer to our static app structure
@@ -374,8 +384,9 @@ PT_THREAD(nodeConnectThread(struct pt *pt))
     _app.appThreadsSuccess++;
 
     // Current thread done, waiting for others threads to be done to end the current thread
-    PT_WAIT_UNTIL(pt, _app.appThreadsSuccess == PROTOTHREADS_NUMBER);
 
+
+    _app.pThreadDone1 = true;
     PT_END(pt);
 }
 
