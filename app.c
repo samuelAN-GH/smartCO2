@@ -56,7 +56,6 @@ struct AppData {
     uint8_t vbat;
     char message[APP_MESSAGE_MAX_LEN];
     bool txInProgress;                  // I2C tx in progress flag
-    uint8_t appThreadsSuccess;          // Number of successfuly finished Threads
 };
 
 static AppData _app;
@@ -242,8 +241,6 @@ AppData *app_init(otInstance *instance)
     app->temp = 0.0;
     app->vbat = 0;
 
-    app->appThreadsSuccess = 0;
-
     // Associate a callback in case of Thread state change (disabled, child, ...)
     error = otSetStateChangedCallback(instance, handleNetifStateChanged, app);
     if (error != OT_ERROR_NONE) {
@@ -313,7 +310,6 @@ PT_THREAD(nodeConnectThread(struct pt *pt))
 {
     INFO("[Thread 1] Node Connection...");
 
-    AppData *app = &_app; //pointer to our static app structure
     static otError error = OT_ERROR_NONE;
 
     PT_BEGIN(pt);
@@ -381,11 +377,7 @@ PT_THREAD(nodeConnectThread(struct pt *pt))
     }
     INFO("[Thread 1] CoAP initialized");
 
-    _app.appThreadsSuccess++;
-
-    // Current thread done, waiting for others threads to be done to end the current thread
-
-
+    // Current thread done
     _app.pThreadDone1 = true;
     PT_END(pt);
 }
