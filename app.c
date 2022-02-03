@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <i2c_.h>
 #include "coap_.h"
 #include "config_.h"
 #include <openthread-core-config.h>
@@ -20,11 +21,14 @@
 #include "app.h"
 #include "dns.h"
 #include "pt/pt.h"
-#include "i2c.h"
 #include "log.h"
+#include "SCD41.h"
+#include "SCD30.h"
 
 #include "sl_component_catalog.h"
 #include <openthread/platform/alarm-milli.h>
+
+#define SCD30_PRESENT 0
 
 #ifndef OPENTHREAD_ENABLE_COVERAGE
 #define OPENTHREAD_ENABLE_COVERAGE 0
@@ -53,9 +57,8 @@ struct AppData {
     float co2;
     float temp;
     float rh;
-    uint8_t vbat;
+    uint8_t vBat;
     char message[APP_MESSAGE_MAX_LEN];
-    bool txInProgress;                  // I2C tx in progress flag
 };
 
 static AppData _app;
@@ -239,7 +242,7 @@ AppData *app_init(otInstance *instance)
     app->co2 = 0.0;
     app->rh = 0.0;
     app->temp = 0.0;
-    app->vbat = 0;
+    app->vBat = 0;
 
     // Associate a callback in case of Thread state change (disabled, child, ...)
     error = otSetStateChangedCallback(instance, handleNetifStateChanged, app);
@@ -270,16 +273,18 @@ void app_process_action(void)
 
     // Execute only one time each thread
     if (!_app.pThreadDone1) {
-       PTHREAD1(&(_app).pThread1);                    // Node thread connection Thread
+       PTHREAD1(&(_app).pThread1);                              // Node thread connection Thread
     }
     if (!_app.pThreadDone2) {
-        // SCD30UpdateValueThread(&(_app).pThread2);  // SCD30 measurement Thread (if connected)
+       if (SCD30_PRESENT) {
+           SCD30UpdateValueThread(&(_app).pThread2, &(_app).pThreadDone2, &(_app).co2, &(_app).temp, &(_app).rh);  // SCD30 measurement Thread (if connected)
+       }
     }
     if (!_app.pThreadDone3) {
-      // SCD41UpdateValueThread(&(_app).pThread3);    // SCD41 measurement Thread
+      SCD41UpdateValueThread(&(_app).pThread3, &(_app).pThreadDone3, &(_app).co2, &(_app).temp, &(_app).rh);    // SCD41 measurement Thread
     }
     if (!_app.pThreadDone4) {
-      //VbatUpdateValueThread(&(_app).pThread4);      // Battery voltage measurement Thread
+      //VbatUpdateValueThread(&(_app).pThread4, &(_app).pThreadDone4, &(_app).vBat);    // Battery voltage measurement Thread
     }
 
     // Check that all threads are done (PT_END triggered)

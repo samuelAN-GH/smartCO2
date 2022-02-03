@@ -1,14 +1,18 @@
 #ifndef i2c_H
 #define i2c_H
 
+#include <i2c_.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdint.h>
 #include "em_device.h"
 #include "em_chip.h"
 #include "em_i2c.h"
 #include "em_cmu.h"
 #include "em_emu.h"
+#include "app.h"
+#include "log.h"
 #include "pt/pt.h"
 
 /**
@@ -49,7 +53,7 @@ void I2C_Read(uint8_t slaveAddress, uint8_t *rxBuff, uint8_t numBytes);
  * @param   success         Flag asserted if transmission has been done correclty
  * @param   app             Application context
  */
-void I2C_WriteCmd(uint8_t slaveAddress, uint8_t *writeCmd, uint8_t numBytesCmd);
+void I2C_WriteCmd(uint8_t slaveAddress, uint8_t *writeCmd);
 
 /**
  * @brief   I2C write command with arguments
