@@ -42,7 +42,7 @@ void initI2C(void)
   I2C0->CTRL = I2C_CTRL_AUTOSN;
 }
 
-void I2C_RequestAndReadback(uint8_t slaveAddress, uint8_t *requestCmd, uint8_t numBytesCmd, uint8_t *rxBuff, uint8_t numBytesRx)
+/*void I2C_RequestAndReadback(uint8_t slaveAddress, uint8_t *requestCmd, uint8_t numBytesCmd, uint8_t *rxBuff, uint8_t numBytesRx)
 {
   INFO("Initializing I2C data vector for Request/Readback");
 
@@ -63,10 +63,12 @@ void I2C_RequestAndReadback(uint8_t slaveAddress, uint8_t *requestCmd, uint8_t n
   if (I2C_Transfer(I2C0)!=i2cTransferDone) {
     ERROR("I2C transaction abort (success = false)");
   }
-}
+}*/
 
 void I2C_Read(uint8_t slaveAddress, uint8_t *rxBuff, uint8_t numBytes)
 {
+
+  uint8_t address = (slaveAddress << 1) | 1;
 
   INFO("Initializing I2C data vector for Read");
   // Transfer structure
@@ -74,7 +76,7 @@ void I2C_Read(uint8_t slaveAddress, uint8_t *rxBuff, uint8_t numBytes)
   I2C_TransferReturn_TypeDef result;
 
   // Initialize I2C transfer
-  i2cTransfer.addr          = slaveAddress;
+  i2cTransfer.addr          = address;
   i2cTransfer.flags         = I2C_FLAG_READ;
   i2cTransfer.buf[0].data   = rxBuff;         // rxBuffer = data[numBytes]
   i2cTransfer.buf[0].len    = numBytes;       // numBytes is < I2C_TXBUFFER_SIZE
@@ -95,13 +97,14 @@ void I2C_Read(uint8_t slaveAddress, uint8_t *rxBuff, uint8_t numBytes)
 
 void I2C_WriteCmd(uint8_t slaveAddress, uint8_t *writeCmd)
 {
+  uint8_t address = (slaveAddress << 1);
   uint8_t numBytesCmd = sizeof(writeCmd);
   INFO("Initializing I2C data vector for Write (without args)");
   I2C_TransferSeq_TypeDef i2cTransfer;
   I2C_TransferReturn_TypeDef result;
 
   // Initialize I2C transfer
-  i2cTransfer.addr          = slaveAddress;
+  i2cTransfer.addr          = address;
   i2cTransfer.flags         = I2C_FLAG_WRITE;
   i2cTransfer.buf[0].data   = writeCmd;     // txBuffer = writeCmd[1byte] + data[numBytes]
   i2cTransfer.buf[0].len    = numBytesCmd; // numBytes is < I2C_TXBUFFER_SIZE
@@ -121,9 +124,11 @@ void I2C_WriteCmd(uint8_t slaveAddress, uint8_t *writeCmd)
   }
 }
 
-void I2C_WriteCmdArgs(uint8_t slaveAddress, uint8_t *writeCmd, uint8_t *settingValue, uint8_t numBytesCmd, uint8_t numBytesData)
+void I2C_WriteCmdArgs(uint8_t slaveAddress, uint8_t *writeCmd, uint8_t *settingValue)
 {
-
+  uint8_t numBytesData = sizeof(settingValue);
+  uint8_t numBytesCmd = sizeof(writeCmd);
+  uint8_t address = (slaveAddress << 1);
   INFO("Initializing I2C data vector for Write (with args)");
   I2C_TransferSeq_TypeDef i2cTransfer;
   I2C_TransferReturn_TypeDef result;
@@ -140,7 +145,7 @@ void I2C_WriteCmdArgs(uint8_t slaveAddress, uint8_t *writeCmd, uint8_t *settingV
   }
 
   // Initialize I2C transfer
-  i2cTransfer.addr          = slaveAddress;
+  i2cTransfer.addr          = address;
   i2cTransfer.flags         = I2C_FLAG_WRITE;
   i2cTransfer.buf[0].data   = txBuffer;     // txBuffer = writeCmd[1byte] + data[numBytes]
   i2cTransfer.buf[0].len    = (numBytesCmd+numBytesData); // numBytes is < I2C_TXBUFFER_SIZE

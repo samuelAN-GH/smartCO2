@@ -66,6 +66,6 @@ void I2C_WriteCmd(uint8_t slaveAddress, uint8_t *writeCmd);
  * @param   success         Flag asserted if transmission has been done correclty
  * @param   app             Application context
  */
-void I2C_WriteCmdArgs(uint8_t slaveAddress, uint8_t *writeCmd, uint8_t *settingValue, uint8_t numBytesCmd, uint8_t numBytesData);
+void I2C_WriteCmdArgs(uint8_t slaveAddress, uint8_t *writeCmd, uint8_t *settingValue);
 
 #endif
