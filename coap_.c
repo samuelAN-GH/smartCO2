@@ -172,6 +172,8 @@ otError coap_schedule_post(CoapClient *client,
         goto cleanup;
     }
 
+
+
     return OT_ERROR_NONE;
 
 cleanup:

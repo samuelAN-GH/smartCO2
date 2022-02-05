@@ -19,7 +19,7 @@
 // <i> size that is guaranteed to be available. The available heap may be larger
 // <i> to make use of any memory that would otherwise remain unused.
 #ifndef SL_HEAP_SIZE
-  #define SL_HEAP_SIZE   2048
+ #define SL_HEAP_SIZE  2048
 #endif
 
 // </h>

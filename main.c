@@ -40,8 +40,7 @@ int main(void)
   otCliOutputFormat("Main loop starting ...");
 
   while (1) {
-
-    sl_system_process_action(); //TODO : remove?
+    sl_system_process_action();
 
     // Application process.
     app_process_action();

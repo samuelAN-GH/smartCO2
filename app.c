@@ -5,6 +5,7 @@
 #include <openthread-core-config.h>
 #include <openthread/config.h>
 #include "ustimer.h"
+#include "sl_malloc.h"
 
 #include <openthread/cli.h>
 #include <openthread/diag.h>
@@ -88,6 +89,7 @@ otInstance *otGetInstance(void)
 }
 
 #if OPENTHREAD_CONFIG_LOG_OUTPUT == OPENTHREAD_CONFIG_LOG_OUTPUT_APP
+
 void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat, ...)
 {
     OT_UNUSED_VARIABLE(aLogLevel);
@@ -101,11 +103,34 @@ void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat
 }
 #endif
 
+
 void sl_ot_create_instance(void)
 {
+#if OPENTHREAD_CONFIG_MULTIPLE_INSTANCE_ENABLE
+    size_t   otInstanceBufferLength = 0;
+    uint8_t *otInstanceBuffer       = NULL;
+
+    // Call to query the buffer size
+    (void)otInstanceInit(NULL, &otInstanceBufferLength);
+
+    // Call to allocate the buffer
+    otInstanceBuffer = (uint8_t *)malloc(otInstanceBufferLength);
+    assert(otInstanceBuffer);
+
+    // Initialize OpenThread with the buffer
+    sInstance = otInstanceInit(otInstanceBuffer, &otInstanceBufferLength);
+#else
     sInstance = otInstanceInitSingle();
+#endif
     assert(sInstance);
 }
+
+
+//void sl_ot_create_instance(void)
+//{
+//    sInstance = otInstanceInitSingle();
+//    assert(sInstance);
+//}
 
 void sl_ot_cli_init(void)
 {
@@ -213,9 +238,6 @@ void setNetworkConfiguration(void)
     assert(otIp6SetEnabled(sInstance, true) == OT_ERROR_NONE);
     assert(otThreadSetEnabled(sInstance, true) == OT_ERROR_NONE);
 
-    GPIO_PinOutSet(gpioPortD, 4);
-    USTIMER_Delay(200000);
-    GPIO_PinOutClear(gpioPortD, 4);
 }
 
 /*
@@ -249,20 +271,19 @@ AppData *app_init(otInstance *instance)
     app->temp = 0.0;
     app->vBat = 0;
 
+    //SCD41Init();
+
+    GPIO_PinOutSet(gpioPortD, 4);
+    USTIMER_Delay(500000);
+    GPIO_PinOutClear(gpioPortD, 4);
+
     // Associate a callback in case of Thread state change (disabled, child, ...)
     error = otSetStateChangedCallback(instance, handleNetifStateChanged, app);
     if (error != OT_ERROR_NONE) {
         ERROR_F("otSetStateChangedCallback");
         return NULL;
     }
-
-    SCD41Init();
-
     return app;
-
-    GPIO_PinOutSet(gpioPortD, 4);
-    USTIMER_Delay(2000000);
-    GPIO_PinOutClear(gpioPortD, 4);
 }
 
 /*
@@ -312,6 +333,7 @@ void app_process_action(void)
     // Check that all threads are done (PT_END triggered)
     if (_app.pThreadDone1 && _app.pThreadDone2 && _app.pThreadDone3 && _app.pThreadDone4) {
 
+
         coap_sending_process(&_app);
 
     }
@@ -352,7 +374,6 @@ PT_THREAD(nodeConnectThread(struct pt *pt))
     INFO("[Thread 1] MDNS client ready");
 
     // 3. Search for the thinsgboard service.
-    if (! _app.done) {
         INFO("[Thread 1] MDNS client searching...");
         _app.done = false;
         _app.error = OT_ERROR_NONE;
@@ -365,6 +386,9 @@ PT_THREAD(nodeConnectThread(struct pt *pt))
         // 4.1 MDNS Timeout
         if (! _app.done) {
             ERROR("[Thread 1] MDNS browse: timed out");
+                GPIO_PinOutSet(gpioPortD, 4);
+                USTIMER_Delay(2000000);
+                GPIO_PinOutClear(gpioPortD, 4);
             PT_RESTART(pt);
         }
 
@@ -372,9 +396,12 @@ PT_THREAD(nodeConnectThread(struct pt *pt))
         if (_app.error != OT_ERROR_NONE) {
             error = _app.error;
             ERROR_F("[Thread 1] MDNS browse");
+            GPIO_PinOutSet(gpioPortD, 4);
+            USTIMER_Delay(4000000);
+            GPIO_PinOutClear(gpioPortD, 4);
             PT_RESTART(pt);
         }
-    }
+
     INFO("[Thread 1] MDNS client connected to thingsboard");
 
     if (! _app.coap) {
@@ -387,7 +414,6 @@ PT_THREAD(nodeConnectThread(struct pt *pt))
         }
     }
 
-    coap_update_target(&_app.coap, &_app.address);
     INFO("[Thread 1] CoAP initialized");
 
     // Current thread done
@@ -432,14 +458,16 @@ PT_THREAD(coap_sending_process(AppData *app))
     error = coap_schedule_post(app->coap, app->message, message_size, &done, &error);
     if (error != OT_ERROR_NONE) {
         ERROR_F("coap_schedule_post");
+
     }
 
     // Waiting for the coap ack.
-    PT_WAIT_UNTIL(pt, done || (NOW() - then) >= 2000);
+    PT_WAIT_UNTIL(pt, done || (NOW() - then) >= 5000);
 
     // Coap time out
     if (! done) {
         ERROR("Coap: timed out");
+
     }
 
     // Coap error
@@ -448,8 +476,8 @@ PT_THREAD(coap_sending_process(AppData *app))
     }
 
     // Wait 10s before re-arming
-    PT_WAIT_UNTIL(pt, (NOW() - then) >= 10000);
-    app->pThreadDone1 = true;
+    USTIMER_Delay(10000000);
+    app->pThreadDone1 = false;
     app->pThreadDone2 = false;
     app->pThreadDone3 = false;
     app->pThreadDone4 = false;

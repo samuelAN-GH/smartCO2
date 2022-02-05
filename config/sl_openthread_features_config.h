@@ -192,7 +192,7 @@
 // </e>
 // <e>  Multiple OpenThread Instances
 #ifndef OPENTHREAD_CONFIG_MULTIPLE_INSTANCE_ENABLE
-#define OPENTHREAD_CONFIG_MULTIPLE_INSTANCE_ENABLE      0
+#define OPENTHREAD_CONFIG_MULTIPLE_INSTANCE_ENABLE      1
 #endif
 // </e>
 // <e>  OTNS (OpenThread Network Simulator)

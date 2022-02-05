@@ -1,4 +1,5 @@
 #CRC Codes for initially generated config files -- do not modify!
+FreeRTOSConfig.h=1694835916
 SEGGER_RTT_Conf.h=1088810083
 dmadrv_config.h=1207334949
 emlib_core_debug_config.h=-551881347
@@ -11,6 +12,7 @@ sl_device_init_hfxo_config.h=1133380573
 sl_memory_config.h=-1006010401
 sl_openthread_features_config.h=-421145345
 sl_openthread_generic_config.h=-481408398
+sl_openthread_rtos_config.h=281687302
 sl_rail_util_pa_config.h=803232669
 sl_rail_util_pti_config.h=167094148
 sl_rail_util_rf_path_config.h=-549302888
