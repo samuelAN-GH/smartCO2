@@ -44,7 +44,7 @@ void LEDUpdateValue(uint8_t color)
 
   uint8_t data[1];
   uint8_t resetRegisters[1] = LED_RESET;
-  data[1] = 0x00;
+  data[0] = 0x00;
   I2C_WriteCmdArgs(LED_ADDRESS, resetRegisters, data, 1, 1);
 
   uint8_t setSWEnable[1] = LED_SHUTDOWN;

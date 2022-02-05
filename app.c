@@ -267,7 +267,6 @@ Application Process / Called by main superloop
 
 void app_process_action(void)
 {
-
     // TaskletsProcess & SysProcess equivalent to old "thread_step"
     // Thread nwk synchronization (OT SYNC)
     otTaskletsProcess(sInstance);
@@ -313,7 +312,7 @@ void app_process_action(void)
 
         INFO("CoAP message sent, going in sleep mode...");
 
-        if (_app.co2 > 800) {
+        if (_app.co2 > 800.0) {
           LEDUpdateValue(1);
         }
         else {
@@ -355,7 +354,7 @@ PT_THREAD(nodeConnectThread(struct pt *pt))
         _app.then = NOW();
     }
 
-    /*// 1. initialize the mdns client.
+    // 1. initialize the mdns client.
     if(!_app.mdns) {
         INFO("[Thread 1] MDNS client init");
         _app.mdns = mdns_init(_app.sInstance, APP_SERVICE_NAME);
@@ -405,7 +404,7 @@ PT_THREAD(nodeConnectThread(struct pt *pt))
             PT_RESTART(pt);
         }
     }
-    INFO("[Thread 1] CoAP initialized");*/
+    INFO("[Thread 1] CoAP initialized");
 
     // Current thread done
     _app.pThreadDone1 = true;
