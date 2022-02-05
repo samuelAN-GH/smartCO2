@@ -95,10 +95,10 @@ void I2C_Read(uint8_t slaveAddress, uint8_t *rxBuff, uint8_t numBytes)
   }
 }
 
-void I2C_WriteCmd(uint8_t slaveAddress, uint8_t *writeCmd)
+void I2C_WriteCmd(uint8_t slaveAddress, uint8_t *writeCmd, uint8_t numBytesCmd)
 {
   uint8_t address = (slaveAddress << 1);
-  uint8_t numBytesCmd = sizeof(writeCmd);
+
   INFO("Initializing I2C data vector for Write (without args)");
   I2C_TransferSeq_TypeDef i2cTransfer;
   I2C_TransferReturn_TypeDef result;
@@ -124,10 +124,9 @@ void I2C_WriteCmd(uint8_t slaveAddress, uint8_t *writeCmd)
   }
 }
 
-void I2C_WriteCmdArgs(uint8_t slaveAddress, uint8_t *writeCmd, uint8_t *settingValue)
+void I2C_WriteCmdArgs(uint8_t slaveAddress, uint8_t *writeCmd, uint8_t *settingValue, uint8_t numBytesCmd, uint8_t numBytesData)
 {
-  uint8_t numBytesData = sizeof(settingValue);
-  uint8_t numBytesCmd = sizeof(writeCmd);
+
   uint8_t address = (slaveAddress << 1);
   INFO("Initializing I2C data vector for Write (with args)");
   I2C_TransferSeq_TypeDef i2cTransfer;

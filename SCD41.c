@@ -40,7 +40,7 @@ PT_THREAD(SCD41UpdateValueThread(struct pt *pt, bool *pThreadDone, float *co2, f
 
   uint8_t getDataRdy[2] = SCD41_GET_DATA_RDY;
 
-  I2C_WriteCmd(SCD41_ADDRESS, getDataRdy);
+  I2C_WriteCmd(SCD41_ADDRESS, getDataRdy, 2);
 
   timeLog = NOW();
   PT_SLEEP(2);
@@ -61,7 +61,7 @@ PT_THREAD(SCD41UpdateValueThread(struct pt *pt, bool *pThreadDone, float *co2, f
       INFO("[Thread 3] Data ready, reading ...");
 
       uint8_t readMeas[2] = SCD41_READ_MEAS;
-      I2C_WriteCmd(SCD41_ADDRESS, readMeas);
+      I2C_WriteCmd(SCD41_ADDRESS, readMeas, 2);
 
       timeLog = NOW();
       PT_SLEEP(2);

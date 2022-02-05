@@ -5,6 +5,13 @@
 #include "sl_system_process_action.h"
 #include <openthread/cli.h>
 #include "em_gpio.h"
+#include "i2c_.h"
+#include <openthread-core-config.h>
+#include <openthread/config.h>
+#include <openthread/thread.h>
+#include <openthread/cli.h>
+#include <openthread/diag.h>
+#include <openthread/tasklet.h>
 
 void initGPIO(void)
 {
@@ -14,7 +21,7 @@ void initGPIO(void)
   GPIO_PinModeSet(gpioPortD, 3, gpioModePushPull, 1);
 
   GPIO_PinOutClear(gpioPortD, 4);
-  GPIO_PinOutClear(gpioPortD, 3);
+  GPIO_PinOutSet(gpioPortD, 3);
 }
 
 int main(void)
@@ -27,6 +34,7 @@ int main(void)
   USTIMER_Init(); // TODO: remove?
 
   AppData *app = app_init(otGetInstance());
+  initI2C();
 
   otCliOutputFormat("System initialized, Thread enabled \r\n");
   otCliOutputFormat("Main loop starting ...");

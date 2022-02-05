@@ -24,6 +24,7 @@
 #include "log.h"
 #include "SCD41.h"
 #include "SCD30.h"
+#include "LED_driver.h"
 
 #include "sl_component_catalog.h"
 #include <openthread/platform/alarm-milli.h>
@@ -254,7 +255,7 @@ AppData *app_init(otInstance *instance)
     return app;
 
     GPIO_PinOutSet(gpioPortD, 4);
-    USTIMER_Delay(200000);
+    USTIMER_Delay(2000000);
     GPIO_PinOutClear(gpioPortD, 4);
 }
 
@@ -266,6 +267,7 @@ Application Process / Called by main superloop
 
 void app_process_action(void)
 {
+
     // TaskletsProcess & SysProcess equivalent to old "thread_step"
     // Thread nwk synchronization (OT SYNC)
     otTaskletsProcess(sInstance);
@@ -273,22 +275,31 @@ void app_process_action(void)
 
     // Execute only one time each thread
     if (!_app.pThreadDone1) {
-       PTHREAD1(&(_app).pThread1);                              // Node thread connection Thread
+       nodeConnectThread(&(_app).pThread1);                              // Node thread connection Thread
     }
     if (!_app.pThreadDone2) {
        if (SCD30_PRESENT) {
            SCD30UpdateValueThread(&(_app).pThread2, &(_app).pThreadDone2, &(_app).co2, &(_app).temp, &(_app).rh);  // SCD30 measurement Thread (if connected)
        }
+       else {
+           _app.pThreadDone2 = true;
+       }
     }
     if (!_app.pThreadDone3) {
-      SCD41UpdateValueThread(&(_app).pThread3, &(_app).pThreadDone3, &(_app).co2, &(_app).temp, &(_app).rh);    // SCD41 measurement Thread
+       SCD41UpdateValueThread(&(_app).pThread3, &(_app).pThreadDone3, &(_app).co2, &(_app).temp, &(_app).rh);    // SCD41 measurement Thread
+       //_app.pThreadDone3 = true;
     }
     if (!_app.pThreadDone4) {
       //VbatUpdateValueThread(&(_app).pThread4, &(_app).pThreadDone4, &(_app).vBat);    // Battery voltage measurement Thread
+        _app.pThreadDone4 = true;
     }
 
     // Check that all threads are done (PT_END triggered)
     if(_app.pThreadDone1 && _app.pThreadDone2 && _app.pThreadDone3 && _app.pThreadDone4) {
+
+        GPIO_PinOutSet(gpioPortD, 4);
+        USTIMER_Delay(1000000);
+        GPIO_PinOutClear(gpioPortD, 4);
 
         INFO("All app_process Threads finished");
         _app.pThreadDone1 = false;
@@ -302,12 +313,26 @@ void app_process_action(void)
 
         INFO("CoAP message sent, going in sleep mode...");
 
-        //Sleep (x min)
-
+        if (_app.co2 > 800) {
+          LEDUpdateValue(1);
+        }
+        else {
+            LEDUpdateValue(2);
+        }
+        // Sleep 30s
         GPIO_PinOutSet(gpioPortD, 4);
-        USTIMER_Delay(200000);
+        USTIMER_Delay(50000);
+        GPIO_PinOutClear(gpioPortD, 4);
+        USTIMER_Delay(50000);
+        GPIO_PinOutSet(gpioPortD, 4);
+        USTIMER_Delay(50000);
+        GPIO_PinOutClear(gpioPortD, 4);
+        USTIMER_Delay(50000);
+        GPIO_PinOutSet(gpioPortD, 4);
+        USTIMER_Delay(50000);
         GPIO_PinOutClear(gpioPortD, 4);
 
+        USTIMER_Delay(10000000);
     }
 }
 
@@ -330,7 +355,7 @@ PT_THREAD(nodeConnectThread(struct pt *pt))
         _app.then = NOW();
     }
 
-    // 1. initialize the mdns client.
+    /*// 1. initialize the mdns client.
     if(!_app.mdns) {
         INFO("[Thread 1] MDNS client init");
         _app.mdns = mdns_init(_app.sInstance, APP_SERVICE_NAME);
@@ -380,7 +405,7 @@ PT_THREAD(nodeConnectThread(struct pt *pt))
             PT_RESTART(pt);
         }
     }
-    INFO("[Thread 1] CoAP initialized");
+    INFO("[Thread 1] CoAP initialized");*/
 
     // Current thread done
     _app.pThreadDone1 = true;

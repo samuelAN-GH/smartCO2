@@ -39,7 +39,7 @@ PT_THREAD(SCD30UpdateValueThread(struct pt *pt, bool *pThreadDone, float *co2, f
 
   uint8_t getDataRdy[2] = SCD30_GET_DATA_RDY;
 
-  I2C_WriteCmd(SCD30_ADDRESS, getDataRdy);
+  I2C_WriteCmd(SCD30_ADDRESS, getDataRdy, 2);
 
   timeLog = NOW();
   PT_SLEEP(4);
@@ -60,7 +60,7 @@ PT_THREAD(SCD30UpdateValueThread(struct pt *pt, bool *pThreadDone, float *co2, f
       INFO("[Thread 2] Data ready, reading ...");
 
       uint8_t readMeas[2] = SCD30_READ_MEAS;
-      I2C_WriteCmd(SCD30_ADDRESS, readMeas);
+      I2C_WriteCmd(SCD30_ADDRESS, readMeas, 2);
 
       timeLog = NOW();
       PT_SLEEP(4);

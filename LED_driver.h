@@ -10,6 +10,6 @@
 #include <stdint.h>
 #include "log.h"
 
-void LEDUpdateValueThread(uint8_t *color);
+void LEDUpdateValue(uint8_t color);
 
 #endif /* LED_DRIVER_H_ */
