@@ -35,23 +35,24 @@
 #define OPENTHREAD_ENABLE_COVERAGE 0
 #endif
 
-#define NOW()                 otPlatAlarmMilliGetNow()
-#define PT_SLEEP(x)           PT_WAIT_UNTIL(pt, (NOW() - _app.then) >= (x))
+#define NOW()               otPlatAlarmMilliGetNow()
+#define PT_SLEEP(x)         PT_WAIT_UNTIL(pt, (NOW() - _app.then) >= (x))
 
-#define PROTOTHREADS_NUMBER 1             // Number of protothreads in app_process_action
-#define PTHREAD1 nodeConnectThread
-#define PTHREAD2 SCD30UpdateValueThread
-#define PTHREAD3 SCD41UpdateValueThread
-#define PTHREAD4 VbatUpdateValueThread
+#define PROTOTHREADS_NUMBER 1 // Number of protothreads in app_process_action
+#define PTHREAD1            nodeConnectThread
+#define PTHREAD2            SCD30UpdateValueThread
+#define PTHREAD3            SCD41UpdateValueThread
+#define PTHREAD4            VbatUpdateValueThread
 
 struct AppData {
-    struct pt pThread1, pThread2, pThread3, pThread4;            // Threads pointers
-    bool pThreadDone1, pThreadDone2, pThreadDone3, pThreadDone4; // Threads single execution done flags
-    otInstance *sInstance;              // OT instance
-    CoapClient *coap;                   // Coap client instance
-    MDnsClient *mdns;                   // MDNS client instance
-    bool done;                          // MDNS client connected to thingsboard
-    bool connected;                     // Current OT instance connected
+    struct pt pThread1, pThread2, pThread3, pThread4; // Threads pointers
+    bool pThreadDone1, pThreadDone2, pThreadDone3,
+        pThreadDone4;      // Threads single execution done flags
+    otInstance *sInstance; // OT instance
+    CoapClient *coap;      // Coap client instance
+    MDnsClient *mdns;      // MDNS client instance
+    bool done;             // MDNS client connected to thingsboard
+    bool connected;        // Current OT instance connected
     uint64_t then;
     otIp6Address address;
     otError error;
@@ -60,6 +61,7 @@ struct AppData {
     float rh;
     uint8_t vBat;
     char message[APP_MESSAGE_MAX_LEN];
+    struct pt sending_process_pt;
 };
 
 static AppData _app;
@@ -78,7 +80,7 @@ void otPlatFree(void *aPtr)
 }
 #endif
 
-static otInstance *    sInstance       = NULL;
+static otInstance *sInstance = NULL;
 
 otInstance *otGetInstance(void)
 {
@@ -110,9 +112,9 @@ void sl_ot_cli_init(void)
     otAppCliInit(sInstance);
 }
 
-static int build_message(AppData *app, float val)
+static int build_message(AppData *app, float co2, float rh, float temp)
 {
-    int wr = snprintf(app->message, APP_MESSAGE_MAX_LEN, APP_MESSAGE_TEMPLATE, val);
+    int wr = snprintf(app->message, APP_MESSAGE_MAX_LEN, APP_MESSAGE_TEMPLATE, co2, rh, temp);
     if (wr < 0 || wr >= APP_MESSAGE_MAX_LEN) {
         return -1;
     }
@@ -158,21 +160,21 @@ static void handleNetifStateChanged(uint32_t flags, void *context)
 
 void setNetworkConfiguration(void)
 {
-    static char          aNetworkName[] = APP_NETWORK_NAME;
-    otError              error;
+    static char aNetworkName[] = APP_NETWORK_NAME;
+    otError error;
     otOperationalDataset aDataset;
 
     memset(&aDataset, 0, sizeof(otOperationalDataset));
 
-    aDataset.mActiveTimestamp                      = 1;
+    aDataset.mActiveTimestamp = 1;
     aDataset.mComponents.mIsActiveTimestampPresent = true;
 
     /* Set Channel */
-    aDataset.mChannel                      = APP_NETWORK_CHANNEL;
+    aDataset.mChannel = APP_NETWORK_CHANNEL;
     aDataset.mComponents.mIsChannelPresent = true;
 
     /* Set Pan ID */
-    aDataset.mPanId                      = (otPanId)APP_NETWORK_PANID;
+    aDataset.mPanId = (otPanId)APP_NETWORK_PANID;
     aDataset.mComponents.mIsPanIdPresent = true;
 
     /* Set Extended Pan ID */
@@ -194,17 +196,18 @@ void setNetworkConfiguration(void)
     /* Set the Active Operational Dataset to this dataset */
     error = otDatasetSetActive(otGetInstance(), &aDataset);
 
-    if (error != OT_ERROR_NONE)
-    {
-        otCliOutputFormat("Error applying thread dataset (Nwk conf): %d, %s\r\n", error, otThreadErrorToString(error));
+    if (error != OT_ERROR_NONE) {
+        otCliOutputFormat("Error applying thread dataset (Nwk conf): %d, %s\r\n",
+                          error,
+                          otThreadErrorToString(error));
         return;
     }
 
     otLinkModeConfig config;
 
     config.mRxOnWhenIdle = true;
-    config.mDeviceType   = 0; //MTD
-    config.mNetworkData  = 0;
+    config.mDeviceType = 0; // MTD
+    config.mNetworkData = 0;
     error = otThreadSetLinkMode(otGetInstance(), config);
 
     assert(otIp6SetEnabled(sInstance, true) == OT_ERROR_NONE);
@@ -239,6 +242,7 @@ AppData *app_init(otInstance *instance)
     PT_INIT(&(_app).pThread2);
     PT_INIT(&(_app).pThread3);
     PT_INIT(&(_app).pThread4);
+    PT_INIT(&app->sending_process_pt);
 
     app->co2 = 0.0;
     app->rh = 0.0;
@@ -251,6 +255,8 @@ AppData *app_init(otInstance *instance)
         ERROR_F("otSetStateChangedCallback");
         return NULL;
     }
+
+    SCD41Init();
 
     return app;
 
@@ -267,71 +273,47 @@ Application Process / Called by main superloop
 
 void app_process_action(void)
 {
+    static bool is_built = false;
+    static int message_size = 0;
     // TaskletsProcess & SysProcess equivalent to old "thread_step"
     // Thread nwk synchronization (OT SYNC)
     otTaskletsProcess(sInstance);
     otSysProcessDrivers(sInstance);
 
     // Execute only one time each thread
-    if (!_app.pThreadDone1) {
-       nodeConnectThread(&(_app).pThread1);                              // Node thread connection Thread
+    if (! _app.pThreadDone1) {
+        nodeConnectThread(&(_app).pThread1); // Node thread connection Thread
     }
-    if (!_app.pThreadDone2) {
-       if (SCD30_PRESENT) {
-           SCD30UpdateValueThread(&(_app).pThread2, &(_app).pThreadDone2, &(_app).co2, &(_app).temp, &(_app).rh);  // SCD30 measurement Thread (if connected)
-       }
-       else {
-           _app.pThreadDone2 = true;
-       }
+    if (! _app.pThreadDone2) {
+        if (SCD30_PRESENT) {
+            SCD30UpdateValueThread(&(_app).pThread2,
+                                   &(_app).pThreadDone2,
+                                   &(_app).co2,
+                                   &(_app).temp,
+                                   &(_app).rh); // SCD30 measurement Thread (if connected)
+        } else {
+            _app.pThreadDone2 = true;
+        }
     }
-    if (!_app.pThreadDone3) {
-       SCD41UpdateValueThread(&(_app).pThread3, &(_app).pThreadDone3, &(_app).co2, &(_app).temp, &(_app).rh);    // SCD41 measurement Thread
-       //_app.pThreadDone3 = true;
+    if (! _app.pThreadDone3) {
+        SCD41UpdateValueThread(&(_app).pThread3,
+                               &(_app).pThreadDone3,
+                               &(_app).co2,
+                               &(_app).temp,
+                               &(_app).rh); // SCD41 measurement Thread
+                                            //_app.pThreadDone3 = true;
     }
-    if (!_app.pThreadDone4) {
-      //VbatUpdateValueThread(&(_app).pThread4, &(_app).pThreadDone4, &(_app).vBat);    // Battery voltage measurement Thread
+    if (! _app.pThreadDone4) {
+        // VbatUpdateValueThread(&(_app).pThread4, &(_app).pThreadDone4, &(_app).vBat);    //
+        // Battery voltage measurement Thread
         _app.pThreadDone4 = true;
     }
 
     // Check that all threads are done (PT_END triggered)
-    if(_app.pThreadDone1 && _app.pThreadDone2 && _app.pThreadDone3 && _app.pThreadDone4) {
+    if (_app.pThreadDone1 && _app.pThreadDone2 && _app.pThreadDone3 && _app.pThreadDone4) {
 
-        GPIO_PinOutSet(gpioPortD, 4);
-        USTIMER_Delay(1000000);
-        GPIO_PinOutClear(gpioPortD, 4);
+        coap_sending_process(&_app);
 
-        INFO("All app_process Threads finished");
-        _app.pThreadDone1 = false;
-        _app.pThreadDone2 = false;
-        _app.pThreadDone3 = false;
-        _app.pThreadDone4 = false;
-
-        INFO("Build and send CoAP message...");
-        //build message()
-        //send message()
-
-        INFO("CoAP message sent, going in sleep mode...");
-
-        if (_app.co2 > 800.0) {
-          LEDUpdateValue(1);
-        }
-        else {
-            LEDUpdateValue(2);
-        }
-        // Sleep 30s
-        GPIO_PinOutSet(gpioPortD, 4);
-        USTIMER_Delay(50000);
-        GPIO_PinOutClear(gpioPortD, 4);
-        USTIMER_Delay(50000);
-        GPIO_PinOutSet(gpioPortD, 4);
-        USTIMER_Delay(50000);
-        GPIO_PinOutClear(gpioPortD, 4);
-        USTIMER_Delay(50000);
-        GPIO_PinOutSet(gpioPortD, 4);
-        USTIMER_Delay(50000);
-        GPIO_PinOutClear(gpioPortD, 4);
-
-        USTIMER_Delay(10000000);
     }
 }
 
@@ -355,7 +337,7 @@ PT_THREAD(nodeConnectThread(struct pt *pt))
     }
 
     // 1. initialize the mdns client.
-    if(!_app.mdns) {
+    if (! _app.mdns) {
         INFO("[Thread 1] MDNS client init");
         _app.mdns = mdns_init(_app.sInstance, APP_SERVICE_NAME);
         if (! _app.mdns) {
@@ -364,13 +346,13 @@ PT_THREAD(nodeConnectThread(struct pt *pt))
             PT_RESTART(pt);
         }
 
-      // 2. Wait for the mdns client to be ready.
-      PT_WAIT_UNTIL(pt, mdns_is_ready(_app.mdns));
+        // 2. Wait for the mdns client to be ready.
+        PT_WAIT_UNTIL(pt, mdns_is_ready(_app.mdns));
     }
     INFO("[Thread 1] MDNS client ready");
 
     // 3. Search for the thinsgboard service.
-    if (!_app.done) {
+    if (! _app.done) {
         INFO("[Thread 1] MDNS client searching...");
         _app.done = false;
         _app.error = OT_ERROR_NONE;
@@ -395,7 +377,7 @@ PT_THREAD(nodeConnectThread(struct pt *pt))
     }
     INFO("[Thread 1] MDNS client connected to thingsboard");
 
-    if (!_app.coap) {
+    if (! _app.coap) {
         // 5. Initialize the coap client
         INFO("[Thread 1] Coap client init");
         _app.coap = coap_init(_app.sInstance, &(_app.address));
@@ -404,6 +386,8 @@ PT_THREAD(nodeConnectThread(struct pt *pt))
             PT_RESTART(pt);
         }
     }
+
+    coap_update_target(&_app.coap, &_app.address);
     INFO("[Thread 1] CoAP initialized");
 
     // Current thread done
@@ -411,51 +395,67 @@ PT_THREAD(nodeConnectThread(struct pt *pt))
     PT_END(pt);
 }
 
-// 6. Data reading/sending loop.
-//while (true) {
-//
-//    INFO("Entering main thread data reading/sending loop ");
-//
-//    // Data collecting goes here.
-////        _app->co2 = SCD41_get_co2();
-////        _app->temp = SCD41_get_temp();
-////        _app->rh = SCD41_get_rh();
-//
-//    message_size = build_message(&_app, _app->co2);
-//
-//    // Sending data to thingsboard
-//
-//    INFO("Sending coap message");
-//    _app->done = false;
-//    _app->error = OT_ERROR_NONE;
-//    _app->then = NOW();
-//
-//    error = coap_schedule_post(_app->coap, _app->message, message_size, &_app->done, &_app->error);
-//    if (error != OT_ERROR_NONE) {
-//        ERROR_F("coap_schedule_post");
-//        PT_SLEEP(1000);
-//        continue;
-//    }
-//
-//    // Waiting for the coap ack.
-//    PT_WAIT_UNTIL(&_app->pt, _app->done || (NOW() - _app->then) >= 3000);
-//
-//    // Coap time out
-//    if (! _app->done) {
-//        ERROR("Coap: timed out");
-//        continue;
-//    }
-//
-//    // Coap error
-//    if (_app->error != OT_ERROR_NONE) {
-//        ERROR("Coap error");
-//        PT_SLEEP(1000);
-//        PT_RESTART(&_app->pt);
-//    }
-//
-//    // No problem: sleep for 5s until next reading period.
-//    PT_SLEEP(1000);
-//}
+PT_THREAD(coap_sending_process(AppData *app))
+{
+    static struct pt *pt;
+    static int message_size;
+    static otError error;
+    static bool done;
+    static uint64_t then;
+
+    pt = &app->sending_process_pt;
+
+    PT_BEGIN(pt);
+
+    message_size = build_message(&_app, _app.co2, _app.rh, _app.temp);
+
+    if (_app.co2 > 800.0) {
+        LEDUpdateValue(1);
+    } else {
+        LEDUpdateValue(2);
+    }
+    // Sleep 30s
+    GPIO_PinOutSet(gpioPortD, 4);
+    USTIMER_Delay(50000);
+    GPIO_PinOutClear(gpioPortD, 4);
+    USTIMER_Delay(50000);
+    GPIO_PinOutSet(gpioPortD, 4);
+    USTIMER_Delay(50000);
+    GPIO_PinOutClear(gpioPortD, 4);
+    USTIMER_Delay(50000);
+    GPIO_PinOutSet(gpioPortD, 4);
+    USTIMER_Delay(50000);
+    GPIO_PinOutClear(gpioPortD, 4);
+
+    done = false;
+    error = OT_ERROR_NONE;
+    error = coap_schedule_post(app->coap, app->message, message_size, &done, &error);
+    if (error != OT_ERROR_NONE) {
+        ERROR_F("coap_schedule_post");
+    }
+
+    // Waiting for the coap ack.
+    PT_WAIT_UNTIL(pt, done || (NOW() - then) >= 2000);
+
+    // Coap time out
+    if (! done) {
+        ERROR("Coap: timed out");
+    }
+
+    // Coap error
+    if (_app.error != OT_ERROR_NONE) {
+        ERROR("Coap error");
+    }
+
+    // Wait 10s before re-arming
+    PT_WAIT_UNTIL(pt, (NOW() - then) >= 10000);
+    app->pThreadDone1 = true;
+    app->pThreadDone2 = false;
+    app->pThreadDone3 = false;
+    app->pThreadDone4 = false;
+
+    PT_END(pt);
+}
 
 /*
 ======================================
@@ -466,5 +466,4 @@ Application Exit - OT instance closing
 void app_exit(void)
 {
     otInstanceFinalize(sInstance);
-
 }

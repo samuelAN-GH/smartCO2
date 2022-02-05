@@ -31,6 +31,10 @@
 static uint64_t timeLog;
 uint8_t i2c_rxBuffer_scd41[SCD41_I2C_MAX_RXBUFFER_SIZE];
 
+void SCD41Init() {
+  uint8_t startMeas[2] = SCD41_START_LP_PERIODIC_MEAS;
+  I2C_WriteCmd(SCD41_ADDRESS, startMeas, 2);
+}
 
 PT_THREAD(SCD41UpdateValueThread(struct pt *pt, bool *pThreadDone, float *co2, float *temp, float *rh))
 {

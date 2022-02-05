@@ -22,5 +22,6 @@ void app_exit(void);
 void app_process_action(void);
 
 PT_THREAD(nodeConnectThread(struct pt *pt));
+PT_THREAD(coap_sending_process(AppData *app));
 
 #endif
