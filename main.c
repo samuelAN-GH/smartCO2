@@ -32,9 +32,9 @@ int main(void)
 
   initGPIO();
   USTIMER_Init(); // TODO: remove?
-
-  AppData *app = app_init(otGetInstance());
   initI2C();
+
+  app_init(otGetInstance());
 
   otCliOutputFormat("System initialized, Thread enabled \r\n");
   otCliOutputFormat("Main loop starting ...");

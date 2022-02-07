@@ -62,7 +62,7 @@ void LEDUpdateValue(uint8_t color)
   I2C_WriteCmdArgs(LED_ADDRESS, enableLEDs_13_TO_18, data, 1, 1);
 
   uint8_t driveCurrent[1];
-  driveCurrent[0] = 0xFF;
+  driveCurrent[0] = 0x14;
 
   uint8_t driveLed3[2] = LED_PWM_3;
   uint8_t driveLed6[2] = LED_PWM_6;

@@ -7,7 +7,7 @@
 
 // Thingsboard config
 
-#define APP_MESSAGE_MAX_LEN 256
+#define APP_MESSAGE_MAX_LEN 1024
 #define APP_SERVICE_NAME    "_ca-thingsboard-coap._udp.default.service.arpa"
 #define APP_SERVICE_PORT    5683
 extern const char APP_MESSAGE_TEMPLATE[];

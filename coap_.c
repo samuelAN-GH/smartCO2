@@ -15,6 +15,9 @@
 
 #include "log.h"
 
+#include "ustimer.h"
+#include "em_gpio.h"
+
 /*------------------------------------------------------------------------------------------------+
  |                                     Private data structure                                     |
  +------------------------------------------------------------------------------------------------*/
@@ -27,7 +30,7 @@
 /**
  * @brief      The maximum number of bytes a message can hold.
  */
-#define MSG_MAX_LEN 256
+#define MSG_MAX_LEN 1024
 
 struct CoapClient {
     otInstance *instance;  //!< The openthread instance
@@ -54,9 +57,13 @@ static void coap_request_callback(void *context,
 
     if (error == OT_ERROR_NONE) {
         INFO("Coap message sent: %s", otCoapMessageCodeToString(message));
+//        GPIO_PinOutSet(gpioPortD, 4);
+//        USTIMER_Delay(4000000);
+//        GPIO_PinOutClear(gpioPortD, 4);
     }
     else {
         ERROR("Failed to send coap message: %s", otCoapMessageCodeToString(message));
+
     }
 
     *client->done = true;
@@ -117,12 +124,18 @@ otError coap_schedule_post(CoapClient *client,
     bool success;
     otError error;
 
+
+
     // 0. Sanity check
     if (client->busy) {
         return OT_ERROR_BUSY;
+
     }
     if (message_size >= MSG_MAX_LEN) {
         ERROR("Message to long!");
+//        GPIO_PinOutSet(gpioPortD, 4);
+//        USTIMER_Delay(2000000);
+//        GPIO_PinOutClear(gpioPortD, 4);
         return OT_ERROR_FAILED;
     }
 
@@ -132,12 +145,16 @@ otError coap_schedule_post(CoapClient *client,
     client->done = done;
     client->error = error_out;
 
+
+
     // 2. Allocate a new outgoing message.
     client->message = otCoapNewMessage(client->instance, NULL);
     if (! client->message) {
         error = OT_ERROR_NO_BUFS;
         goto cleanup;
     }
+
+
 
     // 3. Set it as confirmable, POST and with the default token length.
     otCoapMessageInit(client->message, OT_COAP_TYPE_CONFIRMABLE, OT_COAP_CODE_POST);
@@ -165,8 +182,10 @@ otError coap_schedule_post(CoapClient *client,
     }
 
     // 6. Schedule the message for sending.
+
     error = otCoapSendRequest(
         client->instance, client->message, &client->target, coap_request_callback, client);
+
     if (error != OT_ERROR_NONE) {
         ERROR_F("otCoapSendRequest");
         goto cleanup;
@@ -177,6 +196,7 @@ otError coap_schedule_post(CoapClient *client,
     return OT_ERROR_NONE;
 
 cleanup:
+
     *done = true;
     *error_out = OT_ERROR_ABORT;
     otMessageFree(client->message);

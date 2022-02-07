@@ -271,7 +271,7 @@ AppData *app_init(otInstance *instance)
     app->temp = 0.0;
     app->vBat = 0;
 
-    //SCD41Init();
+    SCD41Init();
 
     GPIO_PinOutSet(gpioPortD, 4);
     USTIMER_Delay(500000);
@@ -332,10 +332,7 @@ void app_process_action(void)
 
     // Check that all threads are done (PT_END triggered)
     if (_app.pThreadDone1 && _app.pThreadDone2 && _app.pThreadDone3 && _app.pThreadDone4) {
-
-
         coap_sending_process(&_app);
-
     }
 }
 
@@ -386,9 +383,9 @@ PT_THREAD(nodeConnectThread(struct pt *pt))
         // 4.1 MDNS Timeout
         if (! _app.done) {
             ERROR("[Thread 1] MDNS browse: timed out");
-                GPIO_PinOutSet(gpioPortD, 4);
-                USTIMER_Delay(2000000);
-                GPIO_PinOutClear(gpioPortD, 4);
+//                GPIO_PinOutSet(gpioPortD, 4);
+//                USTIMER_Delay(2000000);
+//                GPIO_PinOutClear(gpioPortD, 4);
             PT_RESTART(pt);
         }
 
@@ -396,9 +393,9 @@ PT_THREAD(nodeConnectThread(struct pt *pt))
         if (_app.error != OT_ERROR_NONE) {
             error = _app.error;
             ERROR_F("[Thread 1] MDNS browse");
-            GPIO_PinOutSet(gpioPortD, 4);
-            USTIMER_Delay(4000000);
-            GPIO_PinOutClear(gpioPortD, 4);
+//            GPIO_PinOutSet(gpioPortD, 4);
+//            USTIMER_Delay(4000000);
+//            GPIO_PinOutClear(gpioPortD, 4);
             PT_RESTART(pt);
         }
 
@@ -441,17 +438,17 @@ PT_THREAD(coap_sending_process(AppData *app))
         LEDUpdateValue(2);
     }
     // Sleep 30s
-    GPIO_PinOutSet(gpioPortD, 4);
-    USTIMER_Delay(50000);
-    GPIO_PinOutClear(gpioPortD, 4);
-    USTIMER_Delay(50000);
-    GPIO_PinOutSet(gpioPortD, 4);
-    USTIMER_Delay(50000);
-    GPIO_PinOutClear(gpioPortD, 4);
-    USTIMER_Delay(50000);
-    GPIO_PinOutSet(gpioPortD, 4);
-    USTIMER_Delay(50000);
-    GPIO_PinOutClear(gpioPortD, 4);
+//    GPIO_PinOutSet(gpioPortD, 4);
+//    USTIMER_Delay(50000);
+//    GPIO_PinOutClear(gpioPortD, 4);
+//    USTIMER_Delay(50000);
+//    GPIO_PinOutSet(gpioPortD, 4);
+//    USTIMER_Delay(50000);
+//    GPIO_PinOutClear(gpioPortD, 4);
+//    USTIMER_Delay(50000);
+//    GPIO_PinOutSet(gpioPortD, 4);
+//    USTIMER_Delay(50000);
+//    GPIO_PinOutClear(gpioPortD, 4);
 
     done = false;
     error = OT_ERROR_NONE;
@@ -467,7 +464,6 @@ PT_THREAD(coap_sending_process(AppData *app))
     // Coap time out
     if (! done) {
         ERROR("Coap: timed out");
-
     }
 
     // Coap error

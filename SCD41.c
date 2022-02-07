@@ -11,6 +11,7 @@
 #include "dns.h"
 #include "config_.h"
 #include "log.h"
+#include "LED_driver.h"
 
 #define NOW()                 otPlatAlarmMilliGetNow()
 #define PT_SLEEP(x)           PT_WAIT_UNTIL(pt, (NOW() - timeLog) >= (x))
@@ -51,17 +52,20 @@ PT_THREAD(SCD41UpdateValueThread(struct pt *pt, bool *pThreadDone, float *co2, f
 
   I2C_Read(SCD41_ADDRESS, i2c_rxBuffer_scd41, 3);
 
-  uint16_t rawRdy = (i2c_rxBuffer_scd41[7] << 8) | i2c_rxBuffer_scd41[8];
+  uint16_t rawRdy = (i2c_rxBuffer_scd41[0] << 8) | i2c_rxBuffer_scd41[1];
 
-  uint16_t rdy = (rawRdy << 5) & 65504;
+  uint16_t rdy = (rawRdy << 5) & 0xFFE0;
+  //uint16_t rdy = rawRdy;
 
-  if (!rdy) {
+
+  if (rdy == 0x0000) {
       INFO("[Thread 3] Data is not ready, leaving thread ...");
       *pThreadDone = true;
       PT_EXIT(pt);
   }
 
   else {
+      LEDUpdateValue(1);
       INFO("[Thread 3] Data ready, reading ...");
 
       uint8_t readMeas[2] = SCD41_READ_MEAS;
@@ -72,9 +76,12 @@ PT_THREAD(SCD41UpdateValueThread(struct pt *pt, bool *pThreadDone, float *co2, f
 
       I2C_Read(SCD41_ADDRESS, i2c_rxBuffer_scd41, 9);
 
-      *co2 = (float)((i2c_rxBuffer_scd41[1] << 8) | i2c_rxBuffer_scd41[2]);
-      *temp = (float)(-45 + 175 * ((i2c_rxBuffer_scd41[4] << 8) | i2c_rxBuffer_scd41[5]));
-      *rh = (float)(100*((i2c_rxBuffer_scd41[7] << 8) | i2c_rxBuffer_scd41[8]));
+      uint16_t co2_int = ((i2c_rxBuffer_scd41[0] << 8) | i2c_rxBuffer_scd41[1]);
+      uint16_t temp_int = (175 * ( (i2c_rxBuffer_scd41[3] << 8) | i2c_rxBuffer_scd41[4] )/65536)-45;
+      uint16_t rh_int = (100*((i2c_rxBuffer_scd41[6] << 8) | i2c_rxBuffer_scd41[7]))/65536;
+      *co2 = (float)(co2_int);
+      *temp = (float)(temp_int);
+      *rh = (float)(rh_int);
 
       INFO("[Thread 3] Data read done.");
   }
