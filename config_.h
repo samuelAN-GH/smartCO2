@@ -9,6 +9,7 @@
 
 #define APP_MESSAGE_MAX_LEN 1024
 #define APP_SERVICE_NAME    "_ca-thingsboard-coap._udp.default.service.arpa"
+//#define APP_SERVICE_NAME "_br-advertise-coap._udp.default.service.arpa"
 #define APP_SERVICE_PORT    5683
 extern const char APP_MESSAGE_TEMPLATE[];
 extern const char APP_URI_TEMPLATE[];

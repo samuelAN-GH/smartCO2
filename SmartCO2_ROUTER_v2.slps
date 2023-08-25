@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="ASCII"?>
 <model:MDescriptors xmlns:model="http://www.silabs.com/ss/Studio.ecore">
-  <descriptors name="SmartCO2">
+  <descriptors name="SmartCO2_ROUTER_v2">
     <properties key="projectCommon.sdkId" value="com.silabs.sdk.stack.super:4.0.0._-763280527"/>
-    <properties key="universalConfig.generationDirectory" value="C:\Users\samue\SimplicityStudio\v5_workspace\SmartCO2"/>
+    <properties key="universalConfig.generationDirectory" value="C:\Users\samue\SimplicityStudio\v5_workspace\SmartCO2_ROUTER_v2"/>
     <properties key="universalConfig.toolchainCompatibility" value="gcc"/>
     <properties key="projectCommon.boardIds" value="com.silabs.board.none:0.0.0"/>
     <properties key="projectCommon.partId" value="mcu.arm.efr32.mg21.mgm210pa22jia"/>

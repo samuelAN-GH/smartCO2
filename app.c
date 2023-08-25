@@ -1,24 +1,24 @@
 #include <assert.h>
-#include <i2c_.h>
-#include "coap_.h"
-#include "config_.h"
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include "em_gpio.h"
+#include "sl_component_catalog.h"
+#include <sl_sleeptimer.h>
+
 #include <openthread-core-config.h>
 #include <openthread/config.h>
-#include "ustimer.h"
-#include "sl_malloc.h"
-
 #include <openthread/cli.h>
 #include <openthread/diag.h>
 #include <openthread/tasklet.h>
 #include <openthread/thread.h>
 #include <openthread/dataset_ftd.h>
+#include <openthread-system.h>
+#include <openthread/platform/alarm-milli.h>
 
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include "em_gpio.h"
-
-#include "openthread-system.h"
+#include "i2c_.h"
+#include "coap_.h"
+#include "config_.h"
 #include "app.h"
 #include "dns.h"
 #include "pt/pt.h"
@@ -26,9 +26,6 @@
 #include "SCD41.h"
 #include "SCD30.h"
 #include "LED_driver.h"
-
-#include "sl_component_catalog.h"
-#include <openthread/platform/alarm-milli.h>
 
 #define SCD30_PRESENT 0
 
@@ -65,9 +62,15 @@ struct AppData {
     struct pt sending_process_pt;
 };
 
-static AppData _app;
+static AppData _app;  // app instance init.
 
 extern void otAppCliInit(otInstance *aInstance);
+
+/*
+==========================
+Generic OT stack functions
+==========================
+*/
 
 #if OPENTHREAD_CONFIG_HEAP_EXTERNAL_ENABLE
 void *otPlatCAlloc(size_t aNum, size_t aSize)
@@ -103,7 +106,6 @@ void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat
 }
 #endif
 
-
 void sl_ot_create_instance(void)
 {
 #if OPENTHREAD_CONFIG_MULTIPLE_INSTANCE_ENABLE
@@ -124,13 +126,6 @@ void sl_ot_create_instance(void)
 #endif
     assert(sInstance);
 }
-
-
-//void sl_ot_create_instance(void)
-//{
-//    sInstance = otInstanceInitSingle();
-//    assert(sInstance);
-//}
 
 void sl_ot_cli_init(void)
 {
@@ -169,6 +164,12 @@ static void handleNetifStateChanged(uint32_t flags, void *context)
         case OT_DEVICE_ROLE_CHILD:
             if (! app->connected) {
                 INFO("Connected!");
+
+                // Signal the connection to the border router with LEDs
+                GPIO_PinOutSet(gpioPortD, 3);
+                LEDUpdateValue(1);
+                sl_sleeptimer_delay_millisecond(3000);
+                GPIO_PinOutClear(gpioPortD, 3);
             }
             app->connected = true;
             break;
@@ -185,8 +186,16 @@ static void handleNetifStateChanged(uint32_t flags, void *context)
 
 void setNetworkConfiguration(void)
 {
-    static char aNetworkName[] = APP_NETWORK_NAME;
+    otLinkModeConfig config;
     otError error;
+
+    config.mRxOnWhenIdle = 1; // Router
+    config.mDeviceType = 1;   // Full Thread Device
+    config.mNetworkData = 0;
+    error = otThreadSetLinkMode(otGetInstance(), config);
+
+    static char aNetworkName[] = APP_NETWORK_NAME;
+
     otOperationalDataset aDataset;
 
     memset(&aDataset, 0, sizeof(otOperationalDataset));
@@ -228,16 +237,8 @@ void setNetworkConfiguration(void)
         return;
     }
 
-    otLinkModeConfig config;
-
-    config.mRxOnWhenIdle = true;
-    config.mDeviceType = 0; // MTD
-    config.mNetworkData = 0;
-    error = otThreadSetLinkMode(otGetInstance(), config);
-
     assert(otIp6SetEnabled(sInstance, true) == OT_ERROR_NONE);
     assert(otThreadSetEnabled(sInstance, true) == OT_ERROR_NONE);
-
 }
 
 /*
@@ -256,7 +257,7 @@ AppData *app_init(otInstance *instance)
     app->sInstance = instance;
     app->coap = NULL;
     app->mdns = NULL;
-    app->done = true;
+    app->done = false;
     app->then = otPlatAlarmMilliGetNow();
     app->connected = false;
 
@@ -271,11 +272,7 @@ AppData *app_init(otInstance *instance)
     app->temp = 0.0;
     app->vBat = 0;
 
-    SCD41Init();
-
-    GPIO_PinOutSet(gpioPortD, 4);
-    USTIMER_Delay(500000);
-    GPIO_PinOutClear(gpioPortD, 4);
+    SCD41Init();  // Set SCD41 initial settings and measurement mode
 
     // Associate a callback in case of Thread state change (disabled, child, ...)
     error = otSetStateChangedCallback(instance, handleNetifStateChanged, app);
@@ -283,6 +280,7 @@ AppData *app_init(otInstance *instance)
         ERROR_F("otSetStateChangedCallback");
         return NULL;
     }
+
     return app;
 }
 
@@ -292,66 +290,73 @@ Application Process / Called by main superloop
 ==============================================
 */
 
-void app_process_action(void)
+void app_process_action(bool *run)
 {
-    static bool is_built = false;
-    static int message_size = 0;
-    // TaskletsProcess & SysProcess equivalent to old "thread_step"
-    // Thread nwk synchronization (OT SYNC)
-    otTaskletsProcess(sInstance);
-    otSysProcessDrivers(sInstance);
+    INFO("thread 1 : %d\n", _app.pThreadDone1);
+    INFO("thread 2 : %d\n", _app.pThreadDone2);
+    INFO("thread 3 : %d\n", _app.pThreadDone3);
+    INFO("thread 4 : %d\n", _app.pThreadDone4);
 
-    // Execute only one time each thread
+    // Execute only one time each proto-thread
+
+    // Node thread connection Thread
     if (! _app.pThreadDone1) {
-        nodeConnectThread(&(_app).pThread1); // Node thread connection Thread
+        nodeConnectThread(&(_app).pThread1);
     }
+
+    // SCD30 measurement Thread (if connected)
     if (! _app.pThreadDone2) {
         if (SCD30_PRESENT) {
             SCD30UpdateValueThread(&(_app).pThread2,
                                    &(_app).pThreadDone2,
                                    &(_app).co2,
                                    &(_app).temp,
-                                   &(_app).rh); // SCD30 measurement Thread (if connected)
+                                   &(_app).rh);
         } else {
             _app.pThreadDone2 = true;
         }
     }
+
+    // SCD41 measurement Thread
     if (! _app.pThreadDone3) {
         SCD41UpdateValueThread(&(_app).pThread3,
                                &(_app).pThreadDone3,
                                &(_app).co2,
                                &(_app).temp,
-                               &(_app).rh); // SCD41 measurement Thread
-                                            //_app.pThreadDone3 = true;
+                               &(_app).rh);
+
     }
+
+    // Battery voltage measurement Thread
     if (! _app.pThreadDone4) {
         // VbatUpdateValueThread(&(_app).pThread4, &(_app).pThreadDone4, &(_app).vBat);    //
-        // Battery voltage measurement Thread
         _app.pThreadDone4 = true;
     }
 
     // Check that all threads are done (PT_END triggered)
     if (_app.pThreadDone1 && _app.pThreadDone2 && _app.pThreadDone3 && _app.pThreadDone4) {
-        coap_sending_process(&_app);
+        coap_sending_process(&_app, run);
     }
 }
 
 PT_THREAD(nodeConnectThread(struct pt *pt))
 {
+  static otError error = OT_ERROR_NONE;
+  INFO("%d\n", *pt);
+  PT_BEGIN(pt);
+
     INFO("[Thread 1] Node Connection...");
 
-    static otError error = OT_ERROR_NONE;
 
-    PT_BEGIN(pt);
-
-    // 0. Wait for the node to be connected.
+     // 0. Wait for the node to be connected.
     while (true) {
         if (_app.connected) {
             break;
         }
 
         INFO("[Thread 1] Waiting for connection...");
-        PT_SLEEP(1000);
+
+        PT_SLEEP(10000);
         _app.then = NOW();
     }
 
@@ -364,51 +369,52 @@ PT_THREAD(nodeConnectThread(struct pt *pt))
             PT_SLEEP(1000);
             PT_RESTART(pt);
         }
-
+        PT_SLEEP(1000);
         // 2. Wait for the mdns client to be ready.
+        INFO("[Thread 1] wait mdns ready...");
         PT_WAIT_UNTIL(pt, mdns_is_ready(_app.mdns));
     }
     INFO("[Thread 1] MDNS client ready");
-
+    PT_SLEEP(1000);
     // 3. Search for the thinsgboard service.
-        INFO("[Thread 1] MDNS client searching...");
-        _app.done = false;
-        _app.error = OT_ERROR_NONE;
-        _app.then = NOW();
-        error = mdns_schedule_search(_app.mdns, &(_app.address), &(_app.done), &(_app.error));
+    if(!_app.done) {
+          INFO("[Thread 1] MDNS client searching...");
+          _app.done = false;
+          _app.error = OT_ERROR_NONE;
+          _app.then = NOW();
+          error = mdns_schedule_search(_app.mdns, &(_app.address), &(_app.done), &(_app.error));
+          PT_SLEEP(1000);
+          // 4. Waiting for the mdns answer.
+          INFO("[Thread 1] wait mdns answer...");
+          PT_WAIT_UNTIL(pt, _app.done || (NOW() - _app.then) >= 15000);
+          PT_SLEEP(1000);
+          INFO("FLAGdone : %d", _app.done);
+          INFO("FLAG : %s", otThreadErrorToString(_app.error));
+          // 4.1 MDNS Timeout
+          if (! _app.done) {
+              ERROR("[Thread 1] MDNS browse: timed out");
+              PT_RESTART(pt);
+          }
+          PT_SLEEP(1000);
+          // 4.2 MDNS Error
+          if (_app.error != OT_ERROR_NONE) {
+              error = _app.error;
+              INFO("FLAG : %s", otThreadErrorToString(_app.error));
+              ERROR_F("[Thread 1] MDNS browse");
+              PT_RESTART(pt);
+          }
 
-        // 4. Waiting for the mdns answer.
-        PT_WAIT_UNTIL(pt, _app.done || (NOW() - _app.then) >= 15000);
+      INFO("[Thread 1] MDNS client connected to thingsboard");
 
-        // 4.1 MDNS Timeout
-        if (! _app.done) {
-            ERROR("[Thread 1] MDNS browse: timed out");
-//                GPIO_PinOutSet(gpioPortD, 4);
-//                USTIMER_Delay(2000000);
-//                GPIO_PinOutClear(gpioPortD, 4);
-            PT_RESTART(pt);
-        }
-
-        // 4.2 MDNS Error
-        if (_app.error != OT_ERROR_NONE) {
-            error = _app.error;
-            ERROR_F("[Thread 1] MDNS browse");
-//            GPIO_PinOutSet(gpioPortD, 4);
-//            USTIMER_Delay(4000000);
-//            GPIO_PinOutClear(gpioPortD, 4);
-            PT_RESTART(pt);
-        }
-
-    INFO("[Thread 1] MDNS client connected to thingsboard");
-
-    if (! _app.coap) {
-        // 5. Initialize the coap client
-        INFO("[Thread 1] Coap client init");
-        _app.coap = coap_init(_app.sInstance, &(_app.address));
-        if (! _app.coap) {
-            ERROR("[Thread 1] Failed to initialize the coap client");
-            PT_RESTART(pt);
-        }
+      if (! _app.coap) {
+          // 5. Initialize the coap client
+          INFO("[Thread 1] Coap client init");
+          _app.coap = coap_init(_app.sInstance, &(_app.address));
+          if (! _app.coap) {
+              ERROR("[Thread 1] Failed to initialize the coap client");
+              PT_RESTART(pt);
+          }
+      }
     }
 
     INFO("[Thread 1] CoAP initialized");
@@ -418,7 +424,7 @@ PT_THREAD(nodeConnectThread(struct pt *pt))
     PT_END(pt);
 }
 
-PT_THREAD(coap_sending_process(AppData *app))
+PT_THREAD(coap_sending_process(AppData *app, bool *run))
 {
     static struct pt *pt;
     static int message_size;
@@ -432,30 +438,18 @@ PT_THREAD(coap_sending_process(AppData *app))
 
     message_size = build_message(&_app, _app.co2, _app.rh, _app.temp);
 
-    if (_app.co2 > 800.0) {
-        LEDUpdateValue(1);
-    } else {
-        LEDUpdateValue(2);
-    }
-    // Sleep 30s
-//    GPIO_PinOutSet(gpioPortD, 4);
-//    USTIMER_Delay(50000);
-//    GPIO_PinOutClear(gpioPortD, 4);
-//    USTIMER_Delay(50000);
-//    GPIO_PinOutSet(gpioPortD, 4);
-//    USTIMER_Delay(50000);
-//    GPIO_PinOutClear(gpioPortD, 4);
-//    USTIMER_Delay(50000);
-//    GPIO_PinOutSet(gpioPortD, 4);
-//    USTIMER_Delay(50000);
-//    GPIO_PinOutClear(gpioPortD, 4);
+    // TODO add signaling of threshold overrun with LEDs / Buzzer
+//    if (_app.co2 > 800.0) {
+//        LEDUpdateValue(1);
+//    } else {
+//        LEDUpdateValue(2);
+//    }
 
     done = false;
     error = OT_ERROR_NONE;
     error = coap_schedule_post(app->coap, app->message, message_size, &done, &error);
     if (error != OT_ERROR_NONE) {
         ERROR_F("coap_schedule_post");
-
     }
 
     // Waiting for the coap ack.
@@ -468,15 +462,19 @@ PT_THREAD(coap_sending_process(AppData *app))
 
     // Coap error
     if (_app.error != OT_ERROR_NONE) {
+
+        ERROR("%s", otThreadErrorToString(_app.error));
         ERROR("Coap error");
     }
 
-    // Wait 10s before re-arming
-    USTIMER_Delay(10000000);
+    // All proto-threads ready to run for the next app cycle
     app->pThreadDone1 = false;
     app->pThreadDone2 = false;
     app->pThreadDone3 = false;
     app->pThreadDone4 = false;
+
+    // Setting run to false to allow sleeping
+    *run = false;
 
     PT_END(pt);
 }

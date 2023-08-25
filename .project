@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>SmartCO2</name>
+	<name>SmartCO2_ROUTER_v2</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -70,9 +70,24 @@
 			<locationURI>STUDIO_SDK_LOC/platform/common/inc/sl_atomic.h</locationURI>
 		</link>
 		<link>
+			<name>gecko_sdk_4.0.0/platform/common/inc/sl_enum.h</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/platform/common/inc/sl_enum.h</locationURI>
+		</link>
+		<link>
+			<name>gecko_sdk_4.0.0/platform/common/inc/sl_slist.h</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/platform/common/inc/sl_slist.h</locationURI>
+		</link>
+		<link>
 			<name>gecko_sdk_4.0.0/platform/common/inc/sl_status.h</name>
 			<type>1</type>
 			<locationURI>STUDIO_SDK_LOC/platform/common/inc/sl_status.h</locationURI>
+		</link>
+		<link>
+			<name>gecko_sdk_4.0.0/platform/common/src/sl_slist.c</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/platform/common/src/sl_slist.c</locationURI>
 		</link>
 		<link>
 			<name>gecko_sdk_4.0.0/platform/emlib/inc/em_assert.h</name>
@@ -455,6 +470,31 @@
 			<locationURI>STUDIO_SDK_LOC/platform/service/device_init/src/sl_device_init_nvic.c</locationURI>
 		</link>
 		<link>
+			<name>gecko_sdk_4.0.0/platform/service/hfxo_manager/inc/sl_hfxo_manager.h</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/platform/service/hfxo_manager/inc/sl_hfxo_manager.h</locationURI>
+		</link>
+		<link>
+			<name>gecko_sdk_4.0.0/platform/service/hfxo_manager/inc/sli_hfxo_manager.h</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/platform/service/hfxo_manager/inc/sli_hfxo_manager.h</locationURI>
+		</link>
+		<link>
+			<name>gecko_sdk_4.0.0/platform/service/hfxo_manager/src/sl_hfxo_manager.c</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/platform/service/hfxo_manager/src/sl_hfxo_manager.c</locationURI>
+		</link>
+		<link>
+			<name>gecko_sdk_4.0.0/platform/service/hfxo_manager/src/sl_hfxo_manager_hal_s2.c</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/platform/service/hfxo_manager/src/sl_hfxo_manager_hal_s2.c</locationURI>
+		</link>
+		<link>
+			<name>gecko_sdk_4.0.0/platform/service/hfxo_manager/src/sli_hfxo_manager_internal.h</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/platform/service/hfxo_manager/src/sli_hfxo_manager_internal.h</locationURI>
+		</link>
+		<link>
 			<name>gecko_sdk_4.0.0/platform/service/mpu/inc/sl_mpu.h</name>
 			<type>1</type>
 			<locationURI>STUDIO_SDK_LOC/platform/service/mpu/inc/sl_mpu.h</locationURI>
@@ -463,6 +503,41 @@
 			<name>gecko_sdk_4.0.0/platform/service/mpu/src/sl_mpu.c</name>
 			<type>1</type>
 			<locationURI>STUDIO_SDK_LOC/platform/service/mpu/src/sl_mpu.c</locationURI>
+		</link>
+		<link>
+			<name>gecko_sdk_4.0.0/platform/service/power_manager/inc/sl_power_manager.h</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/platform/service/power_manager/inc/sl_power_manager.h</locationURI>
+		</link>
+		<link>
+			<name>gecko_sdk_4.0.0/platform/service/power_manager/inc/sl_power_manager_debug.h</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/platform/service/power_manager/inc/sl_power_manager_debug.h</locationURI>
+		</link>
+		<link>
+			<name>gecko_sdk_4.0.0/platform/service/power_manager/inc/sli_power_manager.h</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/platform/service/power_manager/inc/sli_power_manager.h</locationURI>
+		</link>
+		<link>
+			<name>gecko_sdk_4.0.0/platform/service/power_manager/src/sl_power_manager.c</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/platform/service/power_manager/src/sl_power_manager.c</locationURI>
+		</link>
+		<link>
+			<name>gecko_sdk_4.0.0/platform/service/power_manager/src/sl_power_manager_debug.c</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/platform/service/power_manager/src/sl_power_manager_debug.c</locationURI>
+		</link>
+		<link>
+			<name>gecko_sdk_4.0.0/platform/service/power_manager/src/sl_power_manager_hal_s2.c</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/platform/service/power_manager/src/sl_power_manager_hal_s2.c</locationURI>
+		</link>
+		<link>
+			<name>gecko_sdk_4.0.0/platform/service/power_manager/src/sli_power_manager_private.h</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/platform/service/power_manager/src/sli_power_manager_private.h</locationURI>
 		</link>
 		<link>
 			<name>gecko_sdk_4.0.0/platform/service/sleeptimer/inc/sl_sleeptimer.h</name>
@@ -623,6 +698,16 @@
 			<name>gecko_sdk_4.0.0/protocol/openthread/platform-abstraction/efr32/sl_packet_utils.h</name>
 			<type>1</type>
 			<locationURI>STUDIO_SDK_LOC/protocol/openthread/platform-abstraction/efr32/sl_packet_utils.h</locationURI>
+		</link>
+		<link>
+			<name>gecko_sdk_4.0.0/protocol/openthread/platform-abstraction/efr32/sleep.c</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/protocol/openthread/platform-abstraction/efr32/sleep.c</locationURI>
+		</link>
+		<link>
+			<name>gecko_sdk_4.0.0/protocol/openthread/platform-abstraction/efr32/sleep.h</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/protocol/openthread/platform-abstraction/efr32/sleep.h</locationURI>
 		</link>
 		<link>
 			<name>gecko_sdk_4.0.0/protocol/openthread/platform-abstraction/efr32/startup-gcc.c</name>
@@ -1808,6 +1893,11 @@
 			<name>gecko_sdk_4.0.0/util/third_party/segger/systemview/SEGGER/SEGGER_RTT.h</name>
 			<type>1</type>
 			<locationURI>STUDIO_SDK_LOC/util/third_party/segger/systemview/SEGGER/SEGGER_RTT.h</locationURI>
+		</link>
+		<link>
+			<name>gecko_sdk_4.0.0/util/third_party/segger/systemview/SEGGER/SEGGER_RTT_printf.c</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/util/third_party/segger/systemview/SEGGER/SEGGER_RTT_printf.c</locationURI>
 		</link>
 		<link>
 			<name>gecko_sdk_4.0.0/platform/Device/SiliconLabs/MGM21/Source/GCC/startup_mgm21.c</name>

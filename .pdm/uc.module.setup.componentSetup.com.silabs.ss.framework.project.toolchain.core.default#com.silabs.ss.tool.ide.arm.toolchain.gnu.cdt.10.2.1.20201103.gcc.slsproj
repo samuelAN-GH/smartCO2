@@ -67,6 +67,8 @@
       <folder name="common">
         <folder name="inc">
           <file name="sl_atomic.h" uri="studio:/sdk/platform/common/inc/sl_atomic.h"/>
+          <file name="sl_enum.h" uri="studio:/sdk/platform/common/inc/sl_enum.h"/>
+          <file name="sl_slist.h" uri="studio:/sdk/platform/common/inc/sl_slist.h"/>
           <file name="sl_status.h" uri="studio:/sdk/platform/common/inc/sl_status.h"/>
         </folder>
         <folder name="toolchain">
@@ -78,6 +80,9 @@
             <file name="sl_memory.h" uri="studio:/sdk/platform/common/toolchain/inc/sl_memory.h"/>
             <file name="sl_gcc_preinclude.h" uri="studio:/sdk/platform/common/toolchain/inc/sl_gcc_preinclude.h"/>
           </folder>
+        </folder>
+        <folder name="src">
+          <file name="sl_slist.c" uri="studio:/sdk/platform/common/src/sl_slist.c"/>
         </folder>
       </folder>
       <folder name="CMSIS">
@@ -108,12 +113,36 @@
             <file name="sl_device_init_nvic.c" uri="studio:/sdk/platform/service/device_init/src/sl_device_init_nvic.c"/>
           </folder>
         </folder>
+        <folder name="hfxo_manager">
+          <folder name="src">
+            <file name="sl_hfxo_manager.c" uri="studio:/sdk/platform/service/hfxo_manager/src/sl_hfxo_manager.c"/>
+            <file name="sl_hfxo_manager_hal_s2.c" uri="studio:/sdk/platform/service/hfxo_manager/src/sl_hfxo_manager_hal_s2.c"/>
+            <file name="sli_hfxo_manager_internal.h" uri="studio:/sdk/platform/service/hfxo_manager/src/sli_hfxo_manager_internal.h"/>
+          </folder>
+          <folder name="inc">
+            <file name="sl_hfxo_manager.h" uri="studio:/sdk/platform/service/hfxo_manager/inc/sl_hfxo_manager.h"/>
+            <file name="sli_hfxo_manager.h" uri="studio:/sdk/platform/service/hfxo_manager/inc/sli_hfxo_manager.h"/>
+          </folder>
+        </folder>
         <folder name="mpu">
           <folder name="src">
             <file name="sl_mpu.c" uri="studio:/sdk/platform/service/mpu/src/sl_mpu.c"/>
           </folder>
           <folder name="inc">
             <file name="sl_mpu.h" uri="studio:/sdk/platform/service/mpu/inc/sl_mpu.h"/>
+          </folder>
+        </folder>
+        <folder name="power_manager">
+          <folder name="src">
+            <file name="sl_power_manager.c" uri="studio:/sdk/platform/service/power_manager/src/sl_power_manager.c"/>
+            <file name="sl_power_manager_debug.c" uri="studio:/sdk/platform/service/power_manager/src/sl_power_manager_debug.c"/>
+            <file name="sl_power_manager_hal_s2.c" uri="studio:/sdk/platform/service/power_manager/src/sl_power_manager_hal_s2.c"/>
+            <file name="sli_power_manager_private.h" uri="studio:/sdk/platform/service/power_manager/src/sli_power_manager_private.h"/>
+          </folder>
+          <folder name="inc">
+            <file name="sl_power_manager.h" uri="studio:/sdk/platform/service/power_manager/inc/sl_power_manager.h"/>
+            <file name="sl_power_manager_debug.h" uri="studio:/sdk/platform/service/power_manager/inc/sl_power_manager_debug.h"/>
+            <file name="sli_power_manager.h" uri="studio:/sdk/platform/service/power_manager/inc/sli_power_manager.h"/>
           </folder>
         </folder>
         <folder name="system">
@@ -1174,6 +1203,7 @@
               <file name="SEGGER_RTT.c" uri="studio:/sdk/util/third_party/segger/systemview/SEGGER/SEGGER_RTT.c"/>
               <file name="SEGGER.h" uri="studio:/sdk/util/third_party/segger/systemview/SEGGER/SEGGER.h"/>
               <file name="SEGGER_RTT.h" uri="studio:/sdk/util/third_party/segger/systemview/SEGGER/SEGGER_RTT.h"/>
+              <file name="SEGGER_RTT_printf.c" uri="studio:/sdk/util/third_party/segger/systemview/SEGGER/SEGGER_RTT_printf.c"/>
             </folder>
           </folder>
         </folder>
@@ -1204,6 +1234,7 @@
             <file name="startup-gcc.c" uri="studio:/sdk/protocol/openthread/platform-abstraction/efr32/startup-gcc.c"/>
             <file name="system.c" uri="studio:/sdk/protocol/openthread/platform-abstraction/efr32/system.c"/>
             <file name="uartdrv_uart.c" uri="studio:/sdk/protocol/openthread/platform-abstraction/efr32/uartdrv_uart.c"/>
+            <file name="sleep.c" uri="studio:/sdk/protocol/openthread/platform-abstraction/efr32/sleep.c"/>
             <file name="board_config.h" uri="studio:/sdk/protocol/openthread/platform-abstraction/efr32/board_config.h"/>
             <file name="ieee802154mac.h" uri="studio:/sdk/protocol/openthread/platform-abstraction/efr32/ieee802154mac.h"/>
             <file name="openthread-core-efr32-config.h" uri="studio:/sdk/protocol/openthread/platform-abstraction/efr32/openthread-core-efr32-config.h"/>
@@ -1215,6 +1246,7 @@
             <file name="security_manager.h" uri="studio:/sdk/protocol/openthread/platform-abstraction/efr32/security_manager.h"/>
             <file name="sl_packet_utils.h" uri="studio:/sdk/protocol/openthread/platform-abstraction/efr32/sl_packet_utils.h"/>
             <file name="sl_openthread.h" uri="studio:/sdk/protocol/openthread/platform-abstraction/efr32/sl_openthread.h"/>
+            <file name="sleep.h" uri="studio:/sdk/protocol/openthread/platform-abstraction/efr32/sleep.h"/>
           </folder>
         </folder>
         <folder name="libs">
@@ -1236,6 +1268,7 @@
   <includePath uri="studio:/sdk/platform/emlib/inc"/>
   <includePath uri="studio:/sdk/platform/emlib/host/inc"/>
   <includePath uri="studio:/sdk/platform/emdrv/gpiointerrupt/inc"/>
+  <includePath uri="studio:/sdk/platform/service/hfxo_manager/inc"/>
   <includePath uri="studio:/sdk/util/third_party/crypto/mbedtls/include"/>
   <includePath uri="studio:/sdk/util/third_party/crypto/mbedtls/library"/>
   <includePath uri="studio:/sdk/util/third_party/crypto/sl_component/sl_mbedtls_support/config"/>
@@ -1251,6 +1284,7 @@
   <includePath uri="studio:/sdk/util/third_party/openthread/include"/>
   <includePath uri="studio:/sdk/util/third_party/openthread/include/openthread"/>
   <includePath uri="studio:/sdk/util/third_party/openthread/src/core"/>
+  <includePath uri="studio:/sdk/platform/service/power_manager/inc"/>
   <includePath uri="studio:/sdk/util/third_party/crypto/sl_component/sl_psa_driver/inc"/>
   <includePath uri="studio:/sdk/platform/radio/rail_lib/common"/>
   <includePath uri="studio:/sdk/platform/radio/rail_lib/protocol/ble"/>

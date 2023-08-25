@@ -3,6 +3,7 @@
 #include "em_chip.h"
 #include "sl_device_init_nvic.h"
 #include "sl_device_init_hfrco.h"
+#include "sl_hfxo_manager.h"
 #include "sl_device_init_hfxo.h"
 #include "sl_device_init_clocks.h"
 #include "sl_device_init_emu.h"
@@ -17,16 +18,19 @@
 #include "nvm3_default.h"
 #include "sl_ot_init.h"
 #include "sl_uartdrv_instances.h"
+#include "sl_power_manager.h"
 
 void sl_platform_init(void)
 {
   CHIP_Init();
   sl_device_init_nvic();
   sl_device_init_hfrco();
+  sl_hfxo_manager_init_hardware();
   sl_device_init_hfxo();
   sl_device_init_clocks();
   sl_device_init_emu();
   nvm3_initDefault();
+  sl_power_manager_init();
 }
 
 void sl_driver_init(void)
@@ -38,6 +42,7 @@ void sl_driver_init(void)
 void sl_service_init(void)
 {
   sl_sleeptimer_init();
+  sl_hfxo_manager_init();
   sl_mbedtls_init();
   sl_mpu_disable_execute_from_ram();
 }

@@ -21,9 +21,9 @@ void app_exit(void);
 /**************************************************************************//**
  * Application Process Action.
  *****************************************************************************/
-void app_process_action(void);
+void app_process_action(bool *run);
 
 PT_THREAD(nodeConnectThread(struct pt *pt));
-PT_THREAD(coap_sending_process(AppData *app));
+PT_THREAD(coap_sending_process(AppData *app, bool *run));
 
 #endif

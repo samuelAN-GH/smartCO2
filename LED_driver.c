@@ -48,7 +48,7 @@ void LEDUpdateValue(uint8_t color)
   I2C_WriteCmdArgs(LED_ADDRESS, resetRegisters, data, 1, 1);
 
   uint8_t setSWEnable[1] = LED_SHUTDOWN;
-  data[0] = 0x01;
+  data[0] = 0x01; // LED OFF SOFTWARE
   I2C_WriteCmdArgs(LED_ADDRESS, setSWEnable, data, 1, 1);
 
   // Enable all LEDs TODO: enable only needed ones
@@ -62,7 +62,7 @@ void LEDUpdateValue(uint8_t color)
   I2C_WriteCmdArgs(LED_ADDRESS, enableLEDs_13_TO_18, data, 1, 1);
 
   uint8_t driveCurrent[1];
-  driveCurrent[0] = 0x14;
+  driveCurrent[0] = 0x32;
 
   uint8_t driveLed3[2] = LED_PWM_3;
   uint8_t driveLed6[2] = LED_PWM_6;
